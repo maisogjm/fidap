@@ -1,0 +1,122 @@
+#! /bin/csh -f
+# vardir2_script
+# 08.01.94 by Jose' Ma. Maisog, M.D.
+# Laboratory of Psychology and Psychopathology,
+# National Institute of Mental Health
+
+# Shell script to estimate smoothness of an ANALYZE image volume.
+
+# C executables called: vardir2
+
+# QUERY USER FOR IMAGE DIRECTORY
+scroll 10
+echo  ""
+echo '******************************************************'
+echo  ""
+echo This script will estimate smoothness of ANALYZE images.
+echo One method used is as described in Friston KJ, Worsley KJ, Frackowiak RSJ,
+echo Mazziotta JC, Evans AC, \"Assessing the significance of focal activations
+echo using their spatial extent,\"  Human Brain Mapping 1:210-220 \(1994\).
+echo An alternate measure of smoothness is also given as per Forman SD,
+echo Cohen JD, Fitzgerald M, Eddy WF, Mintun MA, Noll DC, \"Improved
+echo Assessment of Significant Activation in Functional Magnetic Resonance
+echo Imaging \(fMRI\)\: Use of a Cluster-Size Threshold,\" MRM 33\:636-647 \(1995\).
+echo ""
+echo The method of Friston et al. assumes that the voxels in the input image
+echo are Gaussian random variables \(a \"Gaussian Random Field\"\) with unit variance.
+echo The method of Forman et al. assumes that the voxels in the input image were
+echo originally uncorrelated random variables which have been subsequently smoothed
+echo with a Gaussian filter.
+# THEREFORE, if you think that the voxels in the input
+#echo image are normally distributed with unit variance, consider using the method
+#echo of Friston et al.  as the estimate of smoothness.  On the other hand, if you
+#echo think that the voxels in the image were uncorrelated before whatever smoothing
+#echo was subsequently applied to them, perhaps use the method of Forman et al.
+echo ""
+echo Input images whose smoothnesses are to be estimated must be ANALYZE images
+echo with appropriate ANALYZE headers.  They can be 8-bit, 16-bit, OR floating point.
+echo An 8-bit mask must also be available to restrict calculations to relevant areas.
+echo You must have read/write access to the directory in which the images are kept.
+echo ""
+echo -n "Please enter directory in which input images are kept: "
+set dir = $<
+while (! -d $dir)
+    echo Directory $dir does not exist.
+    echo ""
+    echo -n "Please enter directory in which input images are kept: "
+    set dir = $<
+end
+cd $dir
+touch fidap.log
+echo '******************************************************' >> fidap.log
+echo `date` " : " $user " : " vardir2_script >> fidap.log
+
+# MAKE LIST OF IMAGES TO BE ANALYZED
+echo ""
+echo '******************************************************'
+echo ""
+echo Need root name of images to be analyzed.  This is the left-most
+echo string of characters in the image filenames which will match all
+echo of the images you wish to analyze, and ONLY those images.
+echo ""
+echo -n "Type in root name of images to be analyzed: "
+set rootname = $<
+echo ""
+set list = $rootname*.img
+echo These ANALYZE images are going to be analyzed:
+echo $list
+echo ""
+echo They are assumed to already have ANALYZE headers.
+
+# GET 8-BIT MASK
+echo ""
+echo '******************************************************'
+echo ""
+echo Here are some possible mask files:
+ls *mask*.img
+echo ""
+echo You must now enter the name of an 8-bit mask which is to be applied
+echo to the input image.  The 8-bit mask must be of the same image
+echo dimensions as the input image, must be set to 1 in voxels which
+echo are to be included in the volume to be analyzed, and must be zero
+echo everywhere else.  This 8-bit mask may have been generated from
+echo "previous analyses in fidap; or you may create one by thresholding"
+echo an average image of the original experimental data images.
+echo ""
+echo -n "Name of 8-bit mask image (including .img extension): "
+set mask = $<
+
+# CHECK WITH USER IF IT'S OKAY TO GO ON
+echo ""
+echo '******************************************************'
+echo ""
+echo Output will be written to file\(s\) named
+echo ""
+foreach file($list)
+    echo $file:r.smt
+end
+echo ""
+echo -n "Continue <y/n>? "
+set choice = $<
+if ($choice != "y") then
+    echo QUITTING SHELL SCRIPT....
+    sleep 2
+    exit
+endif
+
+# LOOP OVER ALL IMAGE VOLUMES
+set img_no = 1
+while ($img_no <= $#list)
+    echo ""
+    echo Analyzing $list[$img_no]...
+
+    # CALL vardir2
+    echo vardir2 $list[$img_no]:r.hdr $list[$img_no] $mask $list[$img_no]:r.smt >> fidap.log
+    echo vardir2 $list[$img_no]:r.hdr $list[$img_no] $mask $list[$img_no]:r.smt
+    vardir2 $list[$img_no]:r.hdr $list[$img_no] $mask $list[$img_no]:r.smt
+
+    @ img_no++
+end
+
+echo -n "Press Return to continue..."
+set choice = $<

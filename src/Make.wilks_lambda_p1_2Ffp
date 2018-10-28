@@ -1,0 +1,4 @@
+wilks_lambda_p1_2Ffp: wilks_lambda_p1_2Ffp.o
+	$(CC) $(EXTRAS) wilks_lambda_p1_2Ffp.o -o wilks_lambda_p1_2Ffp
+wilks_lambda_p1_2Ffp.o: wilks_lambda_p1_2Ffp.c
+	$(CC) -c wilks_lambda_p1_2Ffp.c

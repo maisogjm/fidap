@@ -1,0 +1,4 @@
+NOT8bit: NOT8bit.o
+	$(CC) $(EXTRAS) NOT8bit.o -o NOT8bit -lm
+NOT8bit.o: NOT8bit.c
+	$(CC) $(EXTRAS) -c NOT8bit.c

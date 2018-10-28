@@ -1,0 +1,4 @@
+std16bit2: std16bit2.o
+	$(CC) $(EXTRAS) std16bit2.o -o std16bit2 -lm
+std16bit2.o: std16bit2.c
+	$(CC) $(EXTRAS) -c std16bit2.c

@@ -1,0 +1,6 @@
+make_mask: make_mask.o imgio.o 
+	$(CC) $(EXTRAS) make_mask.o imgio.o -o make_mask
+make_mask.o: make_mask.c
+	$(CC) $(EXTRAS) -c make_mask.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

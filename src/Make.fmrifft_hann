@@ -1,0 +1,8 @@
+fmrifft_hann: fmrifft_hann.o imgio.o four1.o
+	$(CC) $(EXTRAS) fmrifft_hann.o imgio.o four1.o -o fmrifft_hann -lm
+fmrifft_hann.o: fmrifft_hann.c
+	$(CC) $(EXTRAS) -c fmrifft_hann.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c
+four1.o: four1.c
+	$(CC) $(EXTRAS) -c four1.c

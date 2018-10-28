@@ -1,0 +1,4 @@
+sumFP: sumFP.o
+	$(CC) $(EXTRAS) sumFP.o -o sumFP
+sumFP.o: sumFP.c
+	$(CC) $(EXTRAS) -c sumFP.c

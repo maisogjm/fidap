@@ -1,0 +1,4 @@
+loge: loge.o
+	$(CC) $(EXTRAS) loge.o -o loge -lm
+loge.o: loge.c
+	$(CC) $(EXTRAS) -c loge.c

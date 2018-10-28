@@ -1,0 +1,6 @@
+clusterLENE0_nocorners: clusterLENE0_nocorners.o imgio.o
+	$(CC) $(EXTRAS) clusterLENE0_nocorners.o imgio.o -o clusterLENE0_nocorners
+clusterLENE0_nocorners.o: clusterLENE0_nocorners.c
+	$(CC) $(EXTRAS) -c clusterLENE0_nocorners.c
+imgio.o: imgio.c analyze6.h
+	$(CC) $(EXTRAS) -c imgio.c

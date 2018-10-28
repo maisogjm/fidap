@@ -1,0 +1,6 @@
+dup: dup.o imgio.o
+	$(CC) $(EXTRAS) dup.o imgio.o -o dup
+dup.o: dup.c
+	$(CC) $(EXTRAS) -c dup.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

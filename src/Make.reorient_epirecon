@@ -1,0 +1,4 @@
+reorient_epirecon: reorient_epirecon.o
+	$(CC) $(EXTRAS) reorient_epirecon.o -o reorient_epirecon
+reorient_epirecon.o: reorient_epirecon.c
+	$(CC) $(EXTRAS) -c reorient_epirecon.c

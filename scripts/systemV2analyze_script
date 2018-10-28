@@ -1,0 +1,251 @@
+#! /bin/csh -f
+# systemV2analyze_script.series
+# 04.05.94 by Jose' Ma. Maisog, M.D.
+# Laboratory of Psychology and Psychopathology,
+# National Institute of Mental Health
+
+#
+# Shell script to transform a series of SYSTEM V SIGNA format images into a
+# series of ANALYZE images.  User must know how many SIGNA images
+# per ANALYZE image, which SIGNA image to start with, and image and
+# voxel dimensions.
+
+# C executables called: excise, max16bit, makeheader4, undersample, flipY16bit
+
+# SAVE CURRENT WORKING DIRECTORY FOR LATER USE
+set startdir = $cwd
+
+
+# QUERY USER FOR SIGNA IMAGE DIRECTORY
+scroll 10
+echo This program will transform a \*SERIES\* of SIGNA format images
+echo into a \*SERIES\* of ANALYZE images.  You must have read/write
+echo access to the directory in which the SIGNA images are kept.
+echo After transformation, the SIGNA images will be compressed.
+echo ""
+echo -n "Please enter directory in which SIGNA images are kept: "
+set dir = $<
+if (! -d $dir) then
+    echo Directory $dir does not exist.
+    echo ""
+    echo -n "Please enter directory in which SIGNA images are kept: "
+    set dir = $<
+endif
+cd $dir
+touch fidap.log
+echo '******************************************************' >> fidap.log
+echo `date` " : " $user " : " systemV2analyze_script >> fidap.log
+
+# SHOW USER CONTENTS OF IMAGE DIRECTORY AND QUERY USER FOR NUMBER
+# OF SIGNA SLICES PER ANALYZE IMAGE
+set filelist = `\ls I.??? i.???`
+set numSIGNAfiles = $#filelist
+echo ""
+echo There are $numSIGNAfiles SIGNA format images in ${dir}:
+\ls I.??? i.???
+echo -n Press Return to continue...
+set dummy = $<
+if ($numSIGNAfiles == "0") then
+    exit
+endif
+echo ""
+echo Each i.\?\?\? file is a SIGNA format image and consists of one
+echo slice.  You may want more than one i.\?\?\? file, i.e. slice,
+echo "per ANALYZE image."
+echo ""
+echo -n "Please enter the number of SIGNA files per ANALYZE image: "
+set signaPERanlz = $<
+
+# QUERY USER FOR STARTING SIGNA FILE
+echo ""
+echo "You may not want to start with $filelist[1].  Please enter the full name"
+echo -n "of the SIGNA file which you want to start with (e.g., 'I.003'): "
+set startfile = $<
+while ($filelist[1] != $startfile)
+    shift filelist
+end
+
+# QUERY USER FOR ENDING SIGNA FILE
+echo ""
+echo "You may not want to end with $filelist[$#filelist].  Please enter the full name"
+echo -n "of the SIGNA file which you want to end with (e.g., 'i.250'): "
+set endfile = $<
+
+# CALCULATE NUMBER OF SIGNA IMAGES TO BE CONVERTED
+@ numSIGimgs2use = 1
+while ($filelist[$numSIGimgs2use] != $endfile)
+    @ numSIGimgs2use++
+end
+@ numANLZimgs = $numSIGimgs2use / $signaPERanlz
+echo ""
+echo There are $numSIGimgs2use SIGNA FILES from $filelist[1] to\
+					$filelist[$numSIGimgs2use].
+echo This is enough for $numANLZimgs ANALYZE echo image files,
+echo at $signaPERanlz SIGNA file\(s\) per ANALYZE image.
+
+# QUERY USER FOR ROOT NAME OF NEW IMAGES
+echo ""
+echo After transformation, sequentially numbered ANALYZE images will
+echo be generated.  These ANALYZE images will all have the same root.
+echo For example, the ANALYZE images may be named mri001.img, mri002.img,
+echo "mri003.img, ..., in which case the root is 'mri'."
+echo ""
+echo -n "Please enter the desired root of the ANALYZE image names: "
+set rootname = $<
+
+# QUERY USER FOR STARTING NUMBER OF NEW IMAGES
+echo ""
+echo -n "Number of first new ANALYZE image (e.g., '3'): "
+set anlzimgnum = $<
+set list = {0,1,2,3,4,5,6,7,8,9}{0,1,2,3,4,5,6,7,8,9}{0,1,2,3,4,5,6,7,8,9}
+shift list
+
+# GET IMAGE DIMENSIONS
+scroll 10
+echo Now you must enter the IMAGE dimensions.
+echo Please enter the dimensions of the original IMAGE BEFORE
+echo any undersampling, if you\'re going to do undersampling.
+echo ""
+echo -n "IMAGE dimension in X: "
+set xdim = $<
+echo -n "IMAGE dimension in Y: "
+set ydim = $<
+set zdim = $signaPERanlz
+echo The image dimension in Z will be $zdim.
+@ num_bytes = $xdim * $ydim * 2
+echo The number of bytes per slice will be $num_bytes.
+
+# QUERY USER FOR UNDERSAMPLING FACTOR
+echo ""
+echo You may wish to undersample your images in the spatial domain.
+echo Instead of 256x256 slices, eg, you may want only 128x128 slices.
+echo That would be an undersampling factor of 2 in the x- and y-
+echo dimensions.  No undersampling would be an undersampling factor
+echo of 1.  To determine the undersampling factor, divide the number
+echo of pixels in the x-direction of the original 16-bit MRI image
+echo by the desired number of pixels in the x-direction of the
+echo undersampled image.
+echo ""
+echo -n "Desired undersampling factor: "
+set undersampling = $<
+@ nu_xdim = $xdim / $undersampling
+@ nu_ydim = $ydim / $undersampling
+if ($undersampling != "1") then
+    echo ""
+    echo AFTER undersampling, slice dimensions will be $nu_xdim by $nu_ydim.
+endif
+
+# GET VOXEL SIZE
+echo ""
+echo Now you must enter the VOXEL size.
+echo Please enter the voxel size AFTER any undersampling,
+echo if you\'re going to do undersampling.  echo ""
+echo -n "VOXEL size in X: "
+set vox_xdim = $<
+echo -n "VOXEL size in Y: "
+set vox_ydim = $<
+echo -n "VOXEL size in Z: "
+set vox_zdim = $<
+
+# QUERY USER IF FLIPPING IN Y IS DESIRED
+echo ""
+echo "A pure flip in the Y dimension will be performed if desired."
+echo "This will cause the top-bottom orientation of each slice to be"
+echo "reversed.  This will NOT affect the left-right orientation of"
+echo "the images."
+echo ""
+echo -n "Do you want to flip the images in the Y dimension <y/n>? "
+set flip = $<
+
+echo ""
+echo '******************************************************'
+echo ""
+echo Finally, you must type in a number between 0 and 19.
+echo The \'nice\' command will use this number to adjust
+echo the priority of this process.  \'0\' will result in
+echo the default priority being used.  Higher numbers will
+echo result in lower priorities.  We recommend \'0\' to be
+echo used during off hours, and higher \(nicer\) numbers to
+echo be used during regular work hours.
+echo ""
+echo -n "Priority adjustment number? "
+set priority = $<
+if ($priority == "") then
+    set priority = 0
+endif
+echo $priority >> fidap.log
+
+# CHECK WITH USER IF IT'S OKAY TO GO ON
+echo ""
+echo -n "Continue <y/n>? "
+set choice = $<
+if ($choice != "y") then
+    echo QUITTING SHELL SCRIPT....
+    sleep 2
+    exit
+endif
+
+# PROCEED WITH TRANSFORMATION
+set anlz_img_no = 1
+
+# FOR ALL ANALYZE IMAGES....
+while ($anlz_img_no <= $numANLZimgs)
+
+    # CHECK FOR PRE-EXISTING ANALYZE IMAGE FILE
+	if (-e $rootname$list[$anlzimgnum].img) then
+	    echo $rootname$list[$anlzimgnum].img already exists!
+	    echo -n "Overwrite <y/n>? "
+	    set choice = $<
+	    if ($choice == "n") then
+		echo QUITTING SHELL SCRIPT....
+		sleep 2
+		exit
+	    else
+		\rm $rootname$list[$anlzimgnum].img
+	    endif
+	endif
+
+    touch $rootname$list[$anlzimgnum].img
+    set signa_img_no = 1
+
+    # FOR ALL $signaPERanlz SIGNA IMAGES
+    while ($signa_img_no <= $signaPERanlz)
+	# EXTRACT ANALYZE IMAGE FROM SIGNA FILE
+	#excise $filelist[1] $rootname$list[$anlzimgnum].img 5404 131072
+	nice -$priority excise $filelist[1] $rootname$list[$anlzimgnum].img 7904 $num_bytes
+
+	# MAKE FULL-SIZE HEADER
+	set max = `max16bit $rootname$list[$anlzimgnum]`
+	makeheader4 $rootname$list[$anlzimgnum].hdr $xdim $ydim $zdim\
+			$vox_xdim $vox_ydim $vox_zdim 1 16 $max 0 $max 0 4
+
+	# COMPRESS SIGNA FILE
+	# compress $filelist[1]
+	nice -$priority gzip $filelist[1]
+
+	# SHIFT FILE LIST
+	shift filelist
+	@ signa_img_no++
+    end
+
+    # IF UNDERSAMPLING IS DESIRED, UNDERSAMPLE
+    if ($undersampling != "1") then
+	nice -$priority undersample $rootname$list[$anlzimgnum]\
+		$rootname$list[$anlzimgnum] $undersampling >> /dev/null
+	set max = `max16bit $rootname$list[$anlzimgnum]`
+	makeheader4 $rootname$list[$anlzimgnum].hdr $nu_xdim $nu_ydim $zdim\
+		$vox_xdim $vox_ydim $vox_zdim 1 16 $max 0 $max 0 4
+    endif
+
+    # FLIP IMAGE IF DESIRED
+    if ($flip == "y") then
+	nice -$priority flipY16bit $rootname$list[$anlzimgnum] /usr/tmp/flip$$
+	\cp /usr/tmp/flip$$.img $rootname$list[$anlzimgnum].img
+	\rm /usr/tmp/flip$$.img
+    endif
+
+    @ anlz_img_no++
+    @ anlzimgnum++
+end
+exit
+

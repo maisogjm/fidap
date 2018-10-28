@@ -1,0 +1,284 @@
+#! /bin/csh -f
+# mac2az_script
+# 12.10.93 by Jose' Ma. Maisog, M.D.
+# Laboratory of Psychology and Psychopathology,
+# National Institute of Mental Health
+
+#
+# Shell script to transform a series of "Mac" format images into a
+# series of ANALYZE images.  User must know how many "Mac" images
+# per ANALYZE image, which "Mac" image to start with, and image and
+# voxel dimensions.
+
+# C executables called: excise, makeheader4, max16bit, undersample, reorient16bit
+
+# SAVE CURRENT WORKING DIRECTORY FOR LATER USE
+set startdir = $cwd
+
+# QUERY USER FOR "Mac" IMAGE DIRECTORY
+scroll 10
+echo This program will transform a \*SERIES\* of "Mac" format images
+echo into a \*SERIES\* of ANALYZE images.  You must have read/write
+echo access to the directory in which the "Mac" images are kept.
+#echo After transformation, the "Mac" images will be compressed.
+echo ""
+echo -n "Please enter directory in which 'Mac' images are kept: "
+set dir = $<
+while (! -d $dir)
+    echo Directory $dir does not exist.
+    echo ""
+    echo -n "Please enter directory in which 'Mac' images are kept: "
+    set dir = $<
+end
+cd $dir
+touch fidap.log
+echo '******************************************************' >> fidap.log
+echo `date` " : " $user " : " mac2anlz_script >> fidap.log
+
+# SHOW USER CONTENTS OF IMAGE DIRECTORY
+#set filelist = `\ls  sl*.*.???`
+#set numMacfiles = $#filelist
+#echo ""
+#echo "There are $numMacfiles 'Mac' format images in ${dir}:"
+#\ls  sl*.*.???
+#echo -n Press Return to continue...
+#set dummy = $<
+#if ($numMacfiles == "0") then
+#    exit
+#endif
+
+# DETERMINE MIDDLE STRING
+#set filename_substring = $filelist[1]:r
+#set middle_string = $filename_substring:e
+echo Mac format filenames have a 3-character suffix,
+echo a prefix beginning with \'sl\', and a middle
+echo portion between two dots, e.g.,
+echo ""
+echo "    sl01.middle_string.001"
+echo ""
+echo -n "Please type in the middle string for your Mac files: "
+set middle_string = $<
+echo ""
+echo "The middle portion of these filenames is '$middle_string'."
+
+# QUERY USER FOR NUMBER OF "Mac" SLICES PER ANALYZE IMAGE
+echo ""
+echo Each sl\*.$middle_string.\?\?\? file is a 'Mac' format image and consists of one
+echo slice.  You may want more than one sl\*.$middle_string.\?\?\? file, i.e. slice,
+echo "per ANALYZE image VOLUME."
+echo ""
+echo -n "Please enter the number of 'Mac' files per ANALYZE image: "
+set macPERanlz = $<
+
+# QUERY USER FOR NUMBER OF VOLUMES
+echo ""
+echo -n "Please enter the number of VOLUMES represented here: "
+set numANLZvols = $<
+
+# QUERY USER FOR ROOT NAME OF NEW IMAGES
+echo ""
+echo After transformation, sequentially numbered ANALYZE images will
+echo be generated.  These ANALYZE images will all have the same root.
+echo For example, the ANALYZE images may be named mri001.img, mri002.img,
+echo "mri003.img, ..., in which case the root is 'mri'."
+echo ""
+echo -n "Please enter the desired root of the ANALYZE image names: "
+set rootname = $<
+
+# QUERY USER FOR STARTING NUMBER OF NEW IMAGES
+echo ""
+echo -n "Number of first new ANALYZE image (e.g., '3'): "
+set anlzimgnum = $<
+set number_list = {0,1,2,3,4,5,6,7,8,9}{0,1,2,3,4,5,6,7,8,9}{0,1,2,3,4,5,6,7,8,9}
+shift number_list
+
+# GET IMAGE DIMENSIONS
+scroll 10
+echo Now you must enter the IMAGE dimensions.
+echo Please enter the dimensions of the original IMAGE BEFORE
+echo any undersampling, if you\'re going to do undersampling.
+echo ""
+echo -n "IMAGE dimension in X: "
+set xdim = $<
+echo -n "IMAGE dimension in Y: "
+set ydim = $<
+set zdim = $macPERanlz
+echo The image dimension in Z will be $zdim.
+
+# QUERY USER FOR UNDERSAMPLING FACTOR
+echo ""
+echo You may wish to undersample your images in the spatial domain.
+echo Instead of 256x256 slices, eg, you may want only 128x128 slices.
+echo That would be an undersampling factor of 2 in the x- and y-
+echo dimensions.  No undersampling would be an undersampling factor
+echo of 1.  To determine the undersampling factor, divide the number
+echo of pixels in the x-direction of the original 16-bit MRI image
+echo by the desired number of pixels in the x-direction of the
+echo undersampled image.
+echo ""
+echo -n "Desired undersampling factor: "
+set undersampling = $<
+@ nu_xdim = $xdim / $undersampling
+@ nu_ydim = $ydim / $undersampling
+if ($undersampling != "1") then
+    echo ""
+    echo AFTER undersampling, slice dimensions will be $nu_xdim by $nu_ydim.
+endif
+
+# GET VOXEL DIMENSIONS
+echo ""
+echo Now you must enter the VOXEL size.
+echo Please enter the VOXEL size AFTER any undersampling,
+echo if you\'re going to do undersampling.
+echo ""
+echo -n "VOXEL size in X: "
+set vox_xdim = $<
+echo -n "VOXEL size in Y: "
+set vox_ydim = $<
+echo -n "VOXEL size in Z: "
+set vox_zdim = $<
+
+# ASK USER IF MAC IMAGES NEED TO BE REORIENTED
+#echo ""
+#echo "'Mac' format images from the offline EPI reconstruction"
+#echo program \*may\* need to be reoriented.
+#echo ""
+#echo -n "Do you want to reorient your images <y/n>? "
+#set reorient = $<
+
+# Determine whether reorienting is desired.  If so, a call to
+# reorient16bit, a 16-bit version of Roger Woods' reorient code,
+# will be made.  User must know ahead of time which flag to use
+echo ""
+echo -n "Does a call to reorient16bit need to be made? <y/n>? "
+set reorient = $<
+while (($reorient != "y") && ($reorient != "n"))
+    echo Type \'y\' or \'n\'.
+    echo -n "Does a call to reorient16bit need to be made? <y/n>? "
+    set reorient = $<
+end
+if ($reorient == 'y') then
+    echo " "
+    echo Here are the switches for reorient16bit:
+    reorient16bit
+    echo " "
+    echo " "
+    echo \(used \"xy\" for Susan\'s sagittal images.\)
+    echo -n "Which switch(es) do you want? "
+    set reorient_switch = $<
+endif
+
+echo ""
+echo '******************************************************'
+echo ""
+echo Finally, you must type in a number between 0 and 19.
+echo The \'nice\' command will use this number to adjust
+echo the priority of this process.  \'0\' will result in
+echo the default priority being used.  Higher numbers will
+echo result in lower priorities.  We recommend \'0\' to be
+echo used during off hours, and higher \(nicer\) numbers to
+echo be used during regular work hours.
+echo ""
+echo -n "Priority adjustment number? "
+set priority = $<
+if ($priority == "") then
+    set priority = 0
+endif
+echo $priority >> fidap.log
+
+# CHECK WITH USER IF IT'S OKAY TO GO ON
+echo ""
+echo -n "Continue <y/n>? "
+set choice = $<
+if ($choice != "y") then
+    echo QUITTING SHELL SCRIPT....
+    sleep 2
+    exit
+endif
+
+# PROCEED WITH TRANSFORMATION
+set anlzimgnum = 1
+
+# FOR ALL ANALYZE IMAGES....
+while ($anlzimgnum <= $numANLZvols)
+
+    # CHECK FOR PRE-EXISTING ANALYZE IMAGE FILE
+        if (-e $rootname$number_list[$anlzimgnum].img) then
+            echo $rootname$number_list[$anlzimgnum].img already exists!
+            echo -n "Overwrite <y/n>? "
+            set choice = $<
+            if ($choice == "n") then
+                echo QUITTING SHELL SCRIPT....
+                sleep 2
+                exit
+            else
+                \rm $rootname$number_list[$anlzimgnum].img
+            endif
+        endif
+
+    touch $rootname$number_list[$anlzimgnum].img
+    echo ""
+    echo "$rootname$number_list[$anlzimgnum].img :"
+    set mac_img_no = 1
+
+    # FOR ALL $macPERanlz "Mac" IMAGES
+    while ($mac_img_no <= $macPERanlz)
+        # EXTRACT ANALYZE IMAGE FROM "Mac" FILE
+        nice -$priority excise sl$mac_img_no.$middle_string.$number_list[$anlzimgnum] $rootname$number_list[$anlzimgnum].img 8 8192
+        echo "  sl$mac_img_no.$middle_string.$number_list[$anlzimgnum]"
+
+        # MAKE FULL-SIZE HEADER
+        set max = `max16bit $rootname$number_list[$anlzimgnum]`
+        makeheader4 $rootname$number_list[$anlzimgnum].hdr $xdim $ydim $zdim\
+                        $vox_xdim $vox_ydim $vox_zdim 1 16 $max 0 $max 0 4
+
+        # COMPRESS "Mac" FILE
+        #compress $filelist[1]
+
+        # SHIFT FILE LIST
+        # shift filelist
+        @ mac_img_no++
+    end
+
+    # IF UNDERSAMPLING IS DESIRED, UNDERSAMPLE
+    if ($undersampling != "1") then
+        echo "  Undersampling $rootname$number_list[$anlzimgnum]..."
+        nice -$priority undersample $rootname$number_list[$anlzimgnum]\
+                $rootname$number_list[$anlzimgnum] $undersampling >> /dev/null
+        set max = `max16bit $rootname$number_list[$anlzimgnum]`
+        makeheader4 $rootname$number_list[$anlzimgnum].hdr $nu_xdim $nu_ydim $zdim\
+                $vox_xdim $vox_ydim $vox_zdim 1 16 $max 0 $max 0 4
+    endif
+
+    # IF REORIENTATION IS DESIRED, REORIENT
+    #if ($reorient != "n") then
+    #   echo "  Reorienting $rootname$number_list[$anlzimgnum]..."
+    #   reorient_epirecon $rootname$number_list[$anlzimgnum] \
+    #                           $rootname$number_list[$anlzimgnum]
+    #endif
+
+    # Call reorient16bit if desired.  Need to remake header.
+    if ($reorient == 'y') then
+        echo nice -$priority reorient16bit $rootname$number_list[$anlzimgnum].hdr \
+                    $rootname$number_list[$anlzimgnum] \
+                    $reorient_switch o
+
+        echo nice -$priority reorient16bit $rootname$number_list[$anlzimgnum].hdr \
+                    $rootname$number_list[$anlzimgnum] \
+                    $reorient_switch o >> ../fidap.log
+
+        nice -$priority reorient16bit $rootname$number_list[$anlzimgnum].hdr \
+                    $rootname$number_list[$anlzimgnum] \
+                    $reorient_switch o
+
+        set max = `max16bit $rootname$number_list[$anlzimgnum]`
+        makeheader4 $rootname$number_list[$anlzimgnum].hdr \
+                    $xdim $ydim $macPERanlz $vox_xdim $vox_ydim \
+                    $vox_zdim 1 16 $max 0 $max 0 4
+    endif
+
+    # Increment anlzimgnum.
+    @ anlzimgnum++
+end
+exit
+

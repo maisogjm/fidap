@@ -1,0 +1,6 @@
+dordhdr4B: dordhdr4B.o imgio.o
+	$(CC) $(EXTRAS) dordhdr4B.o imgio.o -o dordhdr4B
+dordhdr4B.o: dordhdr4B.c
+	$(CC) $(EXTRAS) -c dordhdr4B.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

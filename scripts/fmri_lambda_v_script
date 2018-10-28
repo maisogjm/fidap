@@ -1,0 +1,238 @@
+#! /bin/csh -f
+# fmri_lambda_v_script
+# 07.13.94 by Jose' Ma. Maisog, M.D.
+# Laboratory of Psychology and Psychopathology,
+# National Institute of Mental Health
+
+#
+# Shell script to calculate lambda and effective df on 16-bit ANALYZE images.
+# Method based on paper by Friston KJ, Jezzard P, Turner R, Analysis of Functional
+# MRI Time-series.  Human Brain Mapping, 1:153-171 (1994).
+
+# C executables called: fmri_lambda_v
+
+
+scroll 10
+echo  ""
+echo '******************************************************'
+echo ""
+echo This script will estimate lambda and effective df on 16-bit ANALYZE images,
+echo using a method based on paper by Friston KJ, Jezzard P, Turner R, Analysis of
+echo Functional MRI Time-series.  Human Brain Mapping, 1:153-171 \(1994\).
+echo There must be at least one ANALYZE header .hdr file which contains
+echo the appropriate image dimension information.
+echo ""
+
+
+# QUERY USER FOR IMAGE DIRECTORY
+echo  ""
+echo '******************************************************'
+echo  ""
+echo -n "Enter the name of the directory containing data files: "
+set dir = $<
+while (! -d $dir)
+    echo Directory $dir does not exist.
+    echo ""
+    echo -n "Enter the name of the directory containing data files: "
+    set dir = $<
+end
+cd $dir
+touch fidap.log
+echo '******************************************************' >> fidap.log
+echo `date` " : " $user " : " fmri_lambda_v_script >> fidap.log
+
+
+# QUERY USER FOR NAME OF INPUT TEXT FILE, IF IT ALREADY EXISTS
+echo  ""
+echo '******************************************************'
+echo  ""
+echo To run this script, you must first make an INPUT text file.
+echo ""
+echo The first line of the INPUT text file should be the ANALYZE header which
+echo contains appropriate image dimension information.  The rest of
+echo this file should contain the names of the image files, one per line.
+echo Following each name you must place a number which represents the
+echo on-off condition, where "1" represents on, and "0" represents off,
+echo or the control condition.
+echo ""
+set example = `which fmri_lambda_v.txt`
+echo For an example, see the file $example
+echo In this example, there were 60 scans, 15 on, 15 off, 15 on, and 15 off.
+echo ""
+echo If this text file doesn\'t yet exist, you can create it using a text editor
+echo \(eg, vi, emacs, or ez\), or you can create it via this script.
+echo ""
+echo CHOICES:
+echo "  (1) The text file is already made."
+echo "      Continue with this script."
+echo "  (2) Make the text file now, using either"
+echo "      vi, emacs, or ez."
+echo "  (3) Create the text file by directly typing"
+echo "      in the filenames via this script."
+echo "  (4) Exit this script, and make the text file"
+echo "      (using, eg,  vi, emacs, or ez).  After it is"
+echo "      created you must return to this script."
+echo ""
+echo -n " CHOOSE ACTION: "
+set choice = $<
+while ($choice != "1" && $choice != "2" && $choice != "3" && $choice != "4")
+    echo -n " CHOOSE ACTION: "
+    set choice = $<
+end
+
+
+switch ($choice)
+    # FILE ALREADY MADE.
+    case 1:
+    echo ""
+    echo -n "Type in name of text file: "
+    set textfile = $<
+    while (! -e $textfile)
+	echo $textfile does not exist.
+	echo ""
+	echo -n "Type in name of text file: "
+	set textfile = $<
+    end
+
+    echo ""
+    breaksw
+
+    # MAKE THE TEXT FILE VIA THIS SCRIPT
+    case 2:
+    echo ""
+    echo -n "Type in desired name for text file: "
+    set textfile = $<
+    echo ""
+    echo -n "Type in desired editor (eg, "vi" or "emacs"): "
+    set editor = $<
+    echo ""
+    echo ""
+    echo Now entering the editor $editor, creating file $textfile.
+    echo This file should contain the names of the images.  Following each
+    echo name you must place a number which will be used to weight the
+    echo global mean intensities of the images when ratio-adjusting the
+    echo "images' global means (eg, '1')."
+    echo -n Type Return when ready...
+    set dummy = $<
+    echo ""
+    eval `echo $editor $textfile`
+    echo ""
+    echo ""
+    breaksw
+
+    # MAKE THE TEXT FILE VIA THIS SCRIPT
+    case 3:
+    echo ""
+    echo -n "Type in desired name for text file: "
+    set textfile = $<
+    echo ""
+    echo I shall now create the file $textfile.  You must now type in the names
+    echo of the images.  Following each name you must place a number which will
+    echo be used to weight the global mean intensities of the images when
+    echo "ratio-adjusting the images' global means (eg, '1').  After the last"
+    echo carriage return, type a \<Control-D\>.
+    echo ""
+    cat > $textfile
+    breaksw
+
+    # EXIT SCRIPT, MAKE THE TEXT FILE, AND THEN RETURN TO THIS SCRIPT.
+    case 4:
+    echo You have chosen to exit this script.  You must now create the text file.
+    echo This file should contain the names of the images.  Following each
+    echo name you must place a number which will be used to weight the
+    echo global mean intensities of the images when ratio-adjusting the
+    echo "images' global means (eg, '1')."
+    echo Then re-run this script.
+    echo -n Type Return when ready...
+    set dummy = $<
+    exit
+    breaksw
+
+endsw
+
+
+# QUERY USER FOR OUTPUT TEXT FILE NAME
+echo  ""
+echo '******************************************************'
+echo  ""
+echo An output text file will be created.  You must indicate the desired
+echo name of that output text file.
+echo -n "ENTER desired name of output text file: "
+set outtext = $<
+echo ""
+
+# QUERY USER FOR NAME OF MASK IMAGE
+echo  ""
+echo '******************************************************'
+echo  ""
+echo You must now enter the name of the 8-bit mask image file.
+echo This 8-bit mask will determine brain versus non-brain.
+echo A value of 1 indicates brain, a value of 0 indicates non-brain.
+echo Obviously, calculations will be done only on indicated brain voxels.
+echo ""
+echo -n "ENTER the name of the maskfile: "
+set maskfile = $<
+echo ""
+echo $maskfile will be used as the maskfile.
+echo ""
+
+
+# QUERY USER FOR CYCLE LENGTH
+echo  ""
+echo '******************************************************'
+echo  ""
+echo You must now indicate the length in scans of one cycle.
+echo For example, if your time series had 15 on, 15 off, 15 on, 15 off,
+echo then one complete cycle would be of length 30 scans.
+echo ""
+echo -n "ENTER cycle length in scans: "
+set cycle_length = $<
+
+
+# QUERY USER FOR TR
+echo  ""
+echo '******************************************************'
+echo  ""
+echo You must now enter the TR of the time series in seconds.
+echo ""
+echo -n "ENTER the TR in seconds: "
+set TR = $<
+echo ""
+
+
+# QUERY USER FOR DESIRED SMOOTHING.
+echo  ""
+echo '******************************************************'
+echo  ""
+echo You must now indicate the amount of temporal smoothing desired.
+echo In the paper, Friston used a Gaussian smoothing kernel with
+echo FWHM 1.5 scans to suppress thermal noise.  Enter the desired
+echo FWHM in scan lengths for smoothing., e.g. 1.5.
+echo If you wish NO smoothing to be done, enter a value of 0.
+echo ""
+echo -n "ENTER desired FWHM for temporal smoothing in scan lengths: "
+set fwhm = $<
+echo ""
+
+
+# CHECK WITH USER IF IT'S OKAY TO GO ON
+echo ""
+echo -n "Continue <y/n>? "
+set choice = $<
+if ($choice != "y") then
+    echo QUITTING SHELL SCRIPT....
+    sleep 2
+    exit
+endif
+
+
+# CALL fmri_lambda_v:
+echo fmri_lambda_v $textfile $maskfile $cycle_length $TR $fwhm \| tee $outtext
+fmri_lambda_v $textfile $maskfile $cycle_length $TR $fwhm << EOF | tee $outtext
+y
+EOF
+
+sleep 10
+
+exit
+

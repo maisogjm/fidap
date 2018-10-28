@@ -1,0 +1,22 @@
+dominangleINPLANE16bit: dominangleINPLANE16bit.o imgio.o linalgebraD.o moveimg16bitD.o tally_history.o amoebaD.o dotprod16bit.o centergrav16bit.o find_lims16bit.o
+	$(CC) $(EXTRAS) dominangleINPLANE16bit.o imgio.o linalgebraD.o moveimg16bitD.o \
+	tally_history.o amoebaD.o dotprod16bit.o centergrav16bit.o \
+	find_lims16bit.o -o dominangleINPLANE16bit -lm
+dominangleINPLANE16bit.o: dominangleINPLANE16bit.c
+	$(CC) $(EXTRAS) -c dominangleINPLANE16bit.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c
+linalgebraD.o: linalgebraD.c
+	$(CC) $(EXTRAS) -c linalgebraD.c
+moveimg16bitD.o: moveimg16bitD.c
+	$(CC) $(EXTRAS) -c moveimg16bitD.c
+tally_history.o: tally_history.c
+	$(CC) $(EXTRAS) -c tally_history.c
+amoebaD.o: amoebaD.c
+	$(CC) $(EXTRAS) -c amoebaD.c
+dotprod16bit.o: dotprod16bit.c
+	$(CC) $(EXTRAS) -c dotprod16bit.c
+centergrav16bit.o: centergrav16bit.c
+	$(CC) $(EXTRAS) -c centergrav16bit.c
+find_lims16bit.o: find_lims16bit.c
+	$(CC) $(EXTRAS) -c find_lims16bit.c

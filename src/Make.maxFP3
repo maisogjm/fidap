@@ -1,0 +1,4 @@
+maxFP3: maxFP3.o
+	$(CC) $(EXTRAS) maxFP3.o -o maxFP3
+maxFP3.o: maxFP3.c
+	$(CC) $(EXTRAS) -c maxFP3.c

@@ -1,0 +1,4 @@
+fp2byte: fp2byte.o
+	$(CC) $(EXTRAS) fp2byte.o -o fp2byte -lm
+fp2byte.o: fp2byte.c
+	$(CC) $(EXTRAS) -c fp2byte.c

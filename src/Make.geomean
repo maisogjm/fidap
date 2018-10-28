@@ -1,0 +1,4 @@
+geomean: geomean.o
+	$(CC) $(EXTRAS) geomean.o -o geomean -lm
+geomean.o: geomean.c
+	$(CC) $(EXTRAS) -c geomean.c

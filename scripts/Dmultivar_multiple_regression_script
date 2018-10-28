@@ -1,0 +1,499 @@
+#!/bin/csh -f
+# Dmultivar_multiple_regression_script
+# 04.19.96 by Jose' Ma. Maisog, M.D.
+# Laboratory of Psychology and Psychopathology,
+# National Institute of Mental Health
+
+#
+# Shell script to do voxel-wise multivariate multiple regression on 16-bit data.
+
+# C executables called: get_dims_from, az2vox_index, Dmultivar_multiple_regression,
+# maxfp, minfp, makeheader4, meanFP
+
+# Also calls the C shell scripts scroll and fp2byte_script
+
+scroll 10
+echo  ""
+echo '******************************************************'
+echo  ""
+echo  Shell script to perform \(multivariate\) multiple regression
+echo on a voxelwise basis.  Wilks\' lambda maps and regression
+echo coefficient maps will be generated.  In addition, intermediate
+echo calculations for voxels of interest can be output\; these
+echo intermediate calculations can be used to plot waveforms for
+echo those voxels of interest.
+echo ""
+echo Reference: Rencher AC, Methods of Multivariate Analysis,
+echo New York: John Wiley \& Sons, 1995, pp. 366-380.
+echo ""
+echo See also : Worsley KJ, Friston KJ, \"Analysis of fMRI Time-Series
+echo Revisited -- Again,\" Neuroimage, 2:173-181, for the method of
+echo estimating the effective degrees of freedom\;
+echo ""
+echo and:
+echo ""
+echo Press WH, Teukolsky SA, Vetterling WT, Flannery BP, Numerical
+echo Recipes in C, 2nd edition, Cambridge:Cambridge University Press
+echo \(1992\), pp. 43-49, for code used to perform matrix inversion.
+
+# Query user for directory
+echo  ""
+echo  ""
+echo -n "Enter the name of the directory for output files: "
+set dir = $<
+while (! -d $dir)
+    echo Directory $dir does not exist.
+    echo ""
+    echo -n "Enter the name of the directory for output files: "
+    set dir = $<
+end
+cd $dir
+touch fidap.log
+echo '******************************************************' >> fidap.log
+echo `date` " : " $user " : " Dmultivar_multiple_regression_script >> fidap.log
+echo "The following lines are EXACTLY as you've typed them into the script:" >> fidap.log
+
+# Query user for input text file of names.
+echo  ""
+echo '******************************************************'
+echo ""
+echo The input textfile of file names should contain the names of the
+echo fMRI image volume files, one name per line.  If you have more
+echo than one fMRI run, just list all the files for the first run,
+echo then list all the files for the second run, etc., all in the
+echo same text file, one name per line.
+echo ""
+echo -n "Input text file containing names of 16-bit image volumes? "
+set name_textfile = $<
+while(! -e $name_textfile)
+    echo File $name_textfile does not exist.
+    echo ""
+    echo -n "Input text file containing names of 16-bit image volumes? "
+    set name_textfile = $<
+end
+echo $name_textfile >> fidap.log
+
+# Query user for header file.
+echo  ""
+echo '******************************************************'
+echo  ""
+set firstfile = `head -1 $name_textfile`
+echo Suggested header: $firstfile:r.hdr
+echo ""
+echo "Enter the name of a header file which will be used to determine"
+echo "the XYZ dimensions of the image volume."
+echo ""
+echo -n "Name of header file (including .hdr extension)? "
+set header = $<
+while(! -e $header)
+    echo File $header does not exist.
+    echo ""
+    echo -n "Name of header file (including .hdr extension)? "
+    set header = $<
+end
+echo $header >> fidap.log
+set dims = `get_dims_from $header`
+
+echo  ""
+echo '******************************************************'
+echo  ""
+echo Here are some possible mask files:
+ls *mask*.img
+echo ""
+echo -n "Name of 8-bit mask file (including .img extension)? "
+set mask = $<
+while(! -e $mask)
+    echo File $mask does not exist.
+    echo ""
+    echo -n "Name of 8-bit mask file (including .img extension)? "
+    set mask = $<
+end
+echo $mask >> fidap.log
+
+# Query user for input text file specifying slice acquisition sequence.
+echo  ""
+echo '******************************************************'
+echo ""
+echo The text file containing slice acquisition sequence should have
+echo only one line, which is a sequence of numbers indicating the order
+echo in which slices were acquired, separated by spaces.  For example,
+echo if an image volume had 12 slices, and all the odd slices were
+echo acquired first, and then all the even slices were acquired, then
+echo this one line should be
+echo ""
+echo "1 3 5 7 9 11 2 4 6 8 10 12"
+echo ""
+echo ""
+echo -n "Input text file containing slice acquisition sequence? "
+set slice_seq_textfile = $<
+while(! -e $slice_seq_textfile)
+    echo File $slice_seq_textfile does not exist.
+    echo ""
+    echo -n "Input text file containing slice acquisition sequence? "
+    set slice_seq_textfile = $<
+end
+echo $slice_seq_textfile >> fidap.log
+
+echo  ""
+echo '******************************************************'
+echo ""
+echo If you\'re concatenating runs, the number of dependent
+echo variables will be 1.
+echo ""
+echo -n "Number of dependent variables? "
+set num_dep_var = $<
+echo $num_dep_var >> fidap.log
+echo -n "Number of rows (scans) in each dependent variable? "
+set num_rows = $<
+echo $num_rows >> fidap.log
+echo -n "TR in seconds? "
+set tr = $<
+echo $tr >> fidap.log
+
+echo  ""
+echo '******************************************************'
+echo ""
+echo "Technically, the constant should not be counted as an independent"
+echo "variable.  However, mathematically it is handled exactly the same"
+echo "as regressors.  Here, when inputing the number of indepent variables,"
+echo "type in the number of regressors you'll be using, INCLUDING the"
+echo constant.
+echo ""
+echo -n "How many independent variables? "
+set num_ind_var = $<
+echo $num_ind_var >> fidap.log
+echo ""
+echo "Usually, the constant and ramp regressors are not of interest,"
+echo "so the number of variables of interest may be two less than the"
+echo "total number of independent variables."
+echo ""
+echo -n "How many independent variables OF INTEREST? "
+set num_var_int = $<
+echo $num_var_int >> fidap.log
+@ num_var_no_int = $num_ind_var - $num_var_int
+echo ""
+echo The input text files containing independent variables should
+echo have one number per line.  There should be as many numbers in each
+echo of these text files as there are scans per run.  There can be any
+echo number of independent variables, but there should be at least one.
+echo ""
+echo The regression coefficient map for independent variable N, run R will
+echo be written to a file named B_hat_N_runR.img.  The mean regression
+echo coefficient map for independent variable N across all runs will
+echo be output to a file named B_hat_N.img.
+echo ""
+set ind_var_list
+set index = 1
+while($index <= $num_ind_var)
+    echo ""
+    echo '  ******************************************'
+    echo -n "  Text file for independent variable #${index}? "
+    set textfile = $<
+    while(! -e $textfile)
+        echo "  File $textfile does not exist."
+        echo ""
+        echo -n "  Text file for independent variable #${index}? "
+        set textfile = $<
+    end
+    echo $textfile >> fidap.log
+
+    echo ""
+    if ($index > $num_var_no_int) then
+        echo '    **************************'
+        echo "    Now you must choose one of the following normalizations for"
+        echo "    normalizations for ${textfile}:"
+        echo "      (0) No normalization."
+        echo "      (1) Set mean to zero, leave variance alone."
+        echo "      (2) Set mean to zero, and variance to 1."
+        echo ""
+        echo "    You should type in a '0' for a constant or ramp function."
+        echo ""
+        echo -n "    What sort of normalization do you want for ${textfile} <0/1/2>? "
+        set normalization_flag = $<
+        while (($normalization_flag != "0") && ($normalization_flag != "1") \
+                                    && ($normalization_flag != "2"))
+            echo "    Type in a 0, 1, or 2."
+            echo ""
+            echo -n "    What sort of normalization do you want for ${textfile} <0/1/2>? "
+            set normalization_flag = $<
+        end
+	echo $normalization_flag >> fidap.log
+        echo ""
+        echo '    **************************'
+        echo "    Now you must indicate the lag to be used for $textfile."
+        echo "    Either type in a number OR a floating point map indicating"
+        echo "    lag.  You should use a lag of 0 for either a constant or ramp;"
+        echo "    lagging a constant will have no effect, and be wasted computation;"
+        echo "    lagging a ramp may have wierd effects at the beginning and end."
+        echo ""
+        echo -n "    Lag for ${textfile}? "
+        set lag_estimate = $<
+	echo $lag_estimate >> fidap.log
+        echo ""
+        echo '    **************************'
+        echo "    Now you must indicate the dispersion to be used for $textfile."
+        echo "    Either type in a number OR a floating point map indicating"
+        echo "    dispersion.  You should use a dispersion of 0 for either a"
+        echo "    constant or ramp; smoothing a constant will have no effect,"
+        echo "    and be wasted computation; smoothing a ramp will have wierd"
+        echo "    effects at the beginning and end."
+        echo ""
+        echo -n "    Dispersion for ${textfile}? "
+        set disp_estimate = $<
+	echo $disp_estimate >> fidap.log
+        echo ""
+        echo '    **************************'
+        echo "    Now you must indicate whether $lag_estimate must be adjusted"
+        echo "    for the slice acquisition sequence.  MR slices are not acquired"
+        echo "    simultaneously at this time.  Suppose you have two brain areas"
+        echo "    which are in perfect synchrony, but happen to appear in different"
+        echo "    slices.  Under 'absolute' time, they will have the same lag value,"
+        echo "    but under 'relative' time, they will have different apparent lags,"
+        echo "    because of the time difference in slice acquisition.  (The voxel"
+        echo "    in the slice acquired at a later time will have a larger lag.)"
+        echo ""
+        echo "    Type in a '0' if $lag_estimate is to be used as is; a '1' if"
+        echo "    $lag_estimate still needs to be adjusted for the slight time"
+        echo "    difference due to the slice-by-slice acquisition."
+        echo ""
+        echo "    Some rules of thumb: if $textfile is not the constant or ramp"
+        echo "    function, and you've typed in some number (e.g., 4.8) which in"
+        echo "    ABSOLUTE time is to be applied to all brain areas, you would"
+        echo "    probably want this lag to be adjusted for the slight time"
+        echo "    difference due to the slice-by-slice acquisition.  So you'd set"
+        echo "    type in a '1' below."
+        echo ""
+        echo "    However, if $textfile is the constant or ramp function, you"
+        echo "    should have typed in a '0' for the lag, and here you should"
+        echo "    set this flag to '0'; for all voxels, you would want no lag"
+        echo "    applied to the constant or ramp functions."
+        echo ""
+        echo "    If instead of some number, you've typed in the name of a"
+        echo "    floating point lag MAP which contains lags in RELATIVE time"
+        echo "    (the lag has already been adjusted for the slice-time"
+        echo "    differences), you'd set this flag to '0'."
+        echo ""
+        echo "      (0) Use $lag_estimate as is"
+        echo "      (1) Adjust $lag_estimate for slice acquisition sequence"
+        echo ""
+        echo -n "    Choice <0/1>? "
+        set absolute_flag =  $<
+        while (($absolute_flag != '0') && ($absolute_flag != '1'))
+            echo "    Type in a 0 or 1."
+            echo ""
+            echo -n "    Choice <0/1>? "
+            set absolute_flag = $<
+        end
+	echo $absolute_flag >> fidap.log
+    else
+        echo "    Since this is an independent variable of no interest, lag and"
+        echo "    dispersion will be fixed at zero, and no normalization will"
+        echo "    be done."
+        set normalization_flag = 0
+        set lag_estimate       = 0
+        set disp_estimate      = 0
+        set absolute_flag      = 0
+    endif
+    set ind_var_list  = ( $ind_var_list $textfile $normalization_flag $absolute_flag \
+                                                        $lag_estimate $disp_estimate )
+    @ index ++
+end
+
+echo  ""
+echo '******************************************************'
+echo ""
+echo This script will allow you to output the multivariate multiple regression
+echo at selected voxels of interest.  These will be placed in textfiles in
+echo subdirectories named \'voxel_X_Y_Z\', where \[ X Y Z \] are the ANALYZE coordinates
+echo of the voxel of interest.
+echo ""
+echo -n "How many voxels of interest do you have? "
+set num_vox_int = $<
+echo $num_vox_int >> fidap.log
+set voxels_of_int
+set index = 1
+while ($index <= $num_vox_int)
+    echo ""
+    echo "Voxel of interest #${index}:"
+    echo -n "    X-coordinate? "
+    set X = $<
+    echo $X >> fidap.log
+    echo -n "    Y-coordinate? "
+    set Y = $<
+    echo $Y >> fidap.log
+    echo -n "    Z-coordinate? "
+    set Z = $<
+    echo $Z >> fidap.log
+    set vox_index = `az2vox_index $X $Y $Z $dims[1-3]`
+    set voxels_of_int = ($voxels_of_int $vox_index)
+    echo "    Coordinates [ $X $Y $Z ] = voxel index $vox_index"
+    @ index ++
+end
+
+echo ""
+echo '******************************************************'
+echo ""
+echo The \'nice\' command will use this number to adjust
+echo the priority of this process.  \'0\' will result in
+echo the default priority being used.  Higher numbers will
+echo result in lower priorities.  We recommend \'0\' to be
+echo used during off hours, and higher \(nicer\) numbers to
+echo be used during regular work hours.
+echo ""
+echo -n "Priority adjustment number? "
+set priority = $<
+if ($priority == "") then
+    set priority = 0
+endif
+echo $priority >> fidap.log
+
+echo ""
+echo '******************************************************'
+echo ""
+echo You have the option of generating a map of estimated effective
+echo df, using the method of Worsley and Friston.  This may be very
+echo "computationally intensive\!)"
+echo ""
+echo -n "Do you want to generate a map of estimated effective df <y/n>? "
+set f1 = $<
+while (($f1 != "y") && ($f1 != "n"))
+    echo -n "Do you want to generate a map of estimated effective df <y/n>? "
+    set f1 = $<
+end
+
+echo ""
+echo '******************************************************'
+echo ""
+echo This program will output regression coefficient maps and Wilks\'
+echo Lambda maps for the independent variables of interest.  If you want,
+echo it will also output regression coefficient maps and Wilks\' Lambda maps
+echo for all other independent variables\; this will of course require more
+echo disk space.
+echo ""
+echo IN ADDITION TO the maps for the variables of interest, do you want to
+echo -n "output the maps for the variables of NO interest <y/n>? "
+set f2 = $<
+while (($f2 != "y") && ($f2 != "n"))
+    echo IN ADDITION TO the maps for the variables of interest, do you want to
+    echo -n "output the maps for the variables of NO interest <y/n>? "
+    set f2 = $<
+end
+
+echo ""
+echo '******************************************************'
+echo ""
+echo If you want, after all voxels are regressed, this program will output
+echo the fMRI data with all effects of no interest removed, rounded to the
+echo nearest 16-bit integer.  The grand global mean will be added back to
+echo the voxel values to avoid negative numbers.
+echo ""
+echo -n "Do you want to output fMRI data with all effects of no interest removed <y/n>? "
+set f3 = $<
+while (($f3 != "y") && ($f3 != "n"))
+    echo -n "Do you want to output fMRI data with all effects of no interest removed <y/n>? "
+    set f3 = $<
+end
+
+echo ""
+echo '******************************************************'
+echo ""
+echo -n "Do you want scans to be ratio normalized <y/n>? "
+set f4 = $<
+while (($f4 != "y") && ($f4 != "n"))
+    echo -n "Do you want scans to be ratio normalized <y/n>? "
+    set f4 = $<
+end
+
+echo ""
+echo '******************************************************'
+echo ""
+echo Sometimes it is desirable to rerun an analysis, adding more voxels of
+echo interest, but without reanalyzing all other voxels.
+echo ""
+echo -n "Do you want only voxels of interest to be analyzed <y/n>? "
+set f5 = $<
+while (($f5 != "y") && ($f5 != "n"))
+    echo -n "Do you want only voxels of interest to be analyzed <y/n>? "
+    set f5 = $<
+end
+
+
+echo  ""
+echo '******************************************************'
+echo ""
+echo "" >> fidap.log
+echo SUMMARY: >> fidap.log
+echo ANALYZE header file is $header >> fidap.log
+echo Mask is $mask >> fidap.log
+echo Input textfile of names is $name_textfile >> fidap.log
+echo Input textfile of slice acquisition sequence is $slice_seq_textfile >> fidap.log
+echo Number of runs = $num_dep_var >> fidap.log
+echo Number of timepoints per run = $num_rows >> fidap.log
+echo TR in seconds = $tr >> fidap.log
+echo Number of independent variables = $num_ind_var >> fidap.log
+#echo "Text file for independent variable #$index is $textfile" >> fidap.log
+set time1 = `date`
+echo nice -$priority Dmultivar_multiple_regression $header $name_textfile $num_dep_var $num_rows \
+        $mask $num_ind_var $num_var_int $slice_seq_textfile $tr $ind_var_list \
+        $voxels_of_int
+echo nice -$priority Dmultivar_multiple_regression $header $name_textfile $num_dep_var $num_rows \
+        $mask $num_ind_var $num_var_int $slice_seq_textfile $tr $ind_var_list \
+        $voxels_of_int >> fidap.log
+nice -$priority Dmultivar_multiple_regression $header $name_textfile $num_dep_var $num_rows \
+        $mask $num_ind_var $num_var_int $slice_seq_textfile $tr $ind_var_list \
+        $voxels_of_int << EOF
+$f1
+$f2
+$f3
+$f4
+$f5
+EOF
+
+set time2 = `date`
+echo ""
+echo Program ran from $time1 to $time2
+echo Program ran from $time1 to $time2 >> fidap.log
+echo ""
+
+# Make headers for Wilks' Lambda maps
+echo ""
+echo '******************************************************'
+echo Making headers for Wilks\' Lambda maps...
+foreach file(wilks_lambda*.img)
+    set max = `maxfp $file`
+    set min = `minfp $file`
+    makeheader4 $file:r.hdr $dims 1 32 255 0 $max $min 16 1
+end
+
+# Average regression coefficient maps across run, within independent variable.
+#echo ""
+#echo '******************************************************'
+#echo Making average regression coefficient maps...
+#set n = 1
+#while ($n <= $num_ind_var)
+#    meanFP B_hat_${n}_run*img B_hat_${n}.img | grep writing
+#    set max = `maxfp B_hat_${n}.img`
+#    set min = `minfp B_hat_${n}.img`
+#    makeheader4 B_hat_${n}.hdr $dims 1 32 255 0 $max $min 16 1
+
+#    set lambdafile = `ls wilks_lambda_${n}_p*vH*vE*.img`
+#    set max = `maxfp $lambdafile`
+#    set min = `minfp $lambdafile`
+#    makeheader4 $lambdafile:r.hdr $dims 1 32 255 0 $max $min 16 1
+
+#    @ n++
+#end
+
+foreach file( B_hat*.img wilks_lambda*.img SSE.img SE.img)
+    set max = `maxfp $file`
+    set min = `minfp $file`
+    makeheader4 $file:r.hdr $dims 1 32 255 0 $max $min 16 1
+end
+
+# Estimate spatial smoothness off of SE.img
+vardir2 SE.hdr SE.img $mask SE.smt >> /dev/null
+
+# Convert floating point B_hat and Wilks' Lambda maps to byte format
+# for viewing in ANALYZE.
+fp2byte_script B_hat*.img wilks_lambda*.img SSE.img SE.img
+echo All done!

@@ -1,0 +1,4 @@
+divideFP2: divideFP2.o
+	$(CC) $(EXTRAS) divideFP2.o -o divideFP2
+divideFP2.o: divideFP2.c
+	$(CC) $(EXTRAS) -c divideFP2.c

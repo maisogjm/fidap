@@ -1,0 +1,4 @@
+sum_sqrFP: sum_sqrFP.o
+	$(CC) $(EXTRAS) sum_sqrFP.o -o sum_sqrFP
+sum_sqrFP.o: sum_sqrFP.c
+	$(CC) $(EXTRAS) -c sum_sqrFP.c

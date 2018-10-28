@@ -1,0 +1,12 @@
+F_prob: F_prob.o betai.o betacf.o gammln.o nrutil.o
+	$(CC) $(EXTRAS) F_prob.o betai.o betacf.o gammln.o nrutil.o -o F_prob -lm
+F_prob.o: F_prob.c
+	$(CC) $(EXTRAS) -c F_prob.c
+betai.o: betai.c
+	$(CC) $(EXTRAS) -c betai.c
+betacf.o: betacf.c
+	$(CC) $(EXTRAS) -c betacf.c
+gammln.o: gammln.c
+	$(CC) $(EXTRAS) -c gammln.c
+nrutil.o: nrutil.c
+	$(CC) $(EXTRAS) -c nrutil.c

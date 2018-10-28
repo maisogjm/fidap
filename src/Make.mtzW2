@@ -1,0 +1,6 @@
+mtzW2: mtzW2.o loadmat2.o
+	$(CC) $(EXTRAS) mtzW2.o loadmat2.o -o mtzW2 -lm
+mtzW2.o: mtzW2.c
+	$(CC) $(EXTRAS) -c mtzW2.c
+loadmat2.o: loadmat2.c
+	$(CC) $(EXTRAS) -c loadmat2.c

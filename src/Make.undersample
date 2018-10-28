@@ -1,0 +1,4 @@
+undersample: undersample.o
+	$(CC) $(EXTRAS) undersample.o -o undersample
+undersample.o: undersample.c
+	$(CC) $(EXTRAS) -c undersample.c

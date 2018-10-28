@@ -1,0 +1,4 @@
+log10FP: log10FP.o
+	$(CC) $(EXTRAS) log10FP.o -o log10FP -lm
+log10FP.o: log10FP.c
+	$(CC) $(EXTRAS) -c log10FP.c

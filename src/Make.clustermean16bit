@@ -1,0 +1,4 @@
+clustermean16bit: clustermean16bit.o imgio.o
+	$(CC) $(EXTRAS) clustermean16bit.o imgio.o -o clustermean16bit
+clustermean16bit.o: clustermean16bit.c
+	$(CC) $(EXTRAS) -c clustermean16bit.c

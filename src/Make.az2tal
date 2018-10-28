@@ -1,0 +1,4 @@
+az2tal: az2tal.o
+	$(CC) $(EXTRAS) az2tal.o -o az2tal
+az2tal.o: az2tal.c
+	$(CC) $(EXTRAS) -c az2tal.c

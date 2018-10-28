@@ -1,0 +1,88 @@
+#!/bin/csh -f
+# registerINPLANE16bit
+# 04.25.96 by Jose' Ma. Maisog, M.D.
+# Laboratory of Psychology and Psychopathology,
+# National Institute of Mental Health
+
+#
+# Shell script to do in-plane registration of 16-bit images.
+
+# C executables called: dominangleINPLANE16bit
+
+# QUERY USER FOR IMAGE DIRECTORY
+clear
+echo This program will register a series of ANALYZE images.
+echo You must have read/write access to the directory in
+echo which the images are kept.
+echo ""
+echo -n "Please enter directory in which ANALYZE images are kept: "
+set dir = $<
+if (! -d $dir) then
+    echo Directory $dir does not exist.
+    echo ""
+    echo -n "Please enter directory in which ANALYZE images are kept: "
+    set dir = $<
+endif
+cd $dir
+touch fidap.log
+echo '******************************************************' >> fidap.log
+echo `date` " : " $user " : " registerINPLANE16bit >> fidap.log
+
+echo Images are expected to be have similar names, e.g.
+echo jones001.img, jones002.img,...  although they \*don\'t\*
+echo need to start with number 1.  Registered images will have
+echo the same name as the original images, with an \"R\" appended
+echo to the beginning of the name.
+echo ' '
+echo You must enter the common root of image names.  For example,
+echo if your images are jones001.img, jones002.img, ...
+echo the common root would be \'jones\'.  Don\'t include the
+echo .img extension.
+echo ' '
+echo -n "ENTER common root of image names: "
+set root=$<
+echo ' '
+echo Here are the files which match this root \(please wait\):
+ls $root*.img
+echo ' '
+echo Please type in the name of the image which is to be the base
+echo or reference image, i.e., the image TO WHICH all the others
+echo will be registered.  DON\'T include the .img extension.
+echo This image file must have a header file, but doesn\'t
+echo necessarily have to be the first image of the series.
+echo ' '
+echo -n "ENTER name of reference image: "
+set reference=$<
+set header=${reference}.hdr
+echo ' '
+
+echo ""
+echo '******************************************************'
+echo ""
+echo Finally, you must type in a number between 0 and 19.
+echo The \'nice\' command will use this number to adjust
+echo the priority of this process.  \'0\' will result in
+echo the default priority being used.  Higher numbers will
+echo result in lower priorities.  We recommend \'0\' to be
+echo used during off hours, and higher \(nicer\) numbers to
+echo be used during regular work hours.
+echo ""
+echo -n "Priority adjustment number? "
+set priority = $<
+if ($priority == "") then
+    set priority = 0
+endif
+echo $priority >> fidap.log
+
+echo Now beginning registrations....
+echo ' '
+foreach file(`ls $root*.img | grep -v $reference.img`)
+    echo nice -$priority dominangleINPLANE16bit $header $reference.img $file R$file R$file:r.txt 0.001 1 0 >> fidap.log
+    echo nice -$priority dominangleINPLANE16bit $header $reference.img $file R$file R$file:r.txt 0.001 1 0
+    nice -$priority dominangleINPLANE16bit $header $reference.img $file R$file R$file:r.txt 0.001 1 0
+    cp $header R$file:r.hdr
+    echo Compressing $file...
+    nice -$priority gzip $file
+    #compress $file
+end
+

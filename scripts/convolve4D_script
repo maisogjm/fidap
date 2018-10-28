@@ -1,0 +1,305 @@
+#! /bin/csh -f
+# convolve4D16bit_script
+# 10.09.95 by Jose' Ma. Maisog, M.D.
+# Laboratory of Psychology and Psychopathology
+# National Institute of Mental Health
+
+#
+# Shell script to smooth a group of 8-bit, 16-bit, or floating point
+# ANALYZE images in 4D.
+
+# C executables called: convolve4D, max8bit2, min8bit2, max16bit2,
+#                       min16bit2, maxfp, minfp, makeheader4,
+#                       fp2byte_script, get_dims_from, bits_per_pixel
+
+# QUERY USER FOR IMAGE DIRECTORY
+scroll 10
+echo  ""
+echo '******************************************************'
+echo  ""
+echo This script will smooth a group of ANALYZE images in 4D.
+echo This script will smooth a group of ANALYZE images in 3D.
+echo ANALYZE images can be 8-bit, 16-bit, OR 32-bit floating point.
+echo The user will need to specify an ANALYZE header which contains
+echo the image dimensions in X, Y, and Z.  This header must also
+echo contain the correct bits-per-pixel, since that is how the
+echo smoothing program will tell what data type the data is.
+echo User will also need to specify the FWHM in X, Y, and Z in voxel
+echo lengths to use in creating a Gaussian smoothing filter.
+echo Smoothed images will be named the same as the original images,
+echo but with an \"S\" prepended to the name, and the original images
+echo will be compressed to save space.  User must have read/write access
+echo to the directory in which the images are kept.
+echo ""
+echo -n "Please enter directory for smoothed output data: "
+set dir = $<
+while (! -d $dir)
+    echo Directory $dir does not exist.
+    echo ""
+    echo -n "Please enter directory for smoothed output data: "
+    set dir = $<
+end
+cd $dir
+touch fidap.log
+echo '******************************************************' >> fidap.log
+echo `date` " : " $user " : " convolve4D_script >> fidap.log
+
+
+# QUERY USER FOR NAME OF INPUT TEXT FILE
+echo ""
+echo This script will smooth a set of ANALYZE image volumes in 4D.
+echo ""
+echo To run this script, you must first make a text file.
+echo ""
+echo This file should contain the names of the .img image files, one per line.
+echo ""
+echo ""
+echo ""
+echo -n "Type in name of text file: "
+set textfile = $<
+while (! -e $textfile)
+    echo $textfile does not exist.
+    echo ""
+    echo -n "Type in name of text file: "
+    set textfile = $<
+end
+
+
+# QUERY USER FOR NAME OF ANALYZE .hdr FILE
+echo ""
+echo Here are the ANALYZE header files in ${dir}:
+\ls *.hdr
+echo ""
+echo "Please enter the name of one of these ANALYZE header"
+echo "files which has the correct image dimensions for your"
+echo -n "images AND BITS PER VOXEL (including .hdr extension): "
+set hdrfile = $<
+while (! -e $hdrfile)
+    echo $hdrfile does not exist.
+    echo ""
+    echo -n "Type in name of header file file: "
+    set hdrfile = $<
+end
+set dims = `get_dims_from $hdrfile`
+set bits_per_pix = `bits_per_pixel $hdrfile`
+@ num_vox = $dims[1] * $dims[2] * $dims[3]
+echo ""
+echo Image volumes have dimensions $dims[1] x $dims[2] x $dims[3]
+echo Image volumes have total of $num_vox voxels each.
+echo Data type is $bits_per_pix bits per voxel.
+echo ""
+echo -n Type Return when ready...
+set dummy = $<
+
+
+# QUERY USER FOR NAME OF 8-BIT MASK FILE
+echo You must now enter the name of the 8-bit mask image file.
+echo This 8-bit mask will determine brain versus non-brain.
+echo All images will be masked PRIOR to being smoothed.
+echo A value of 1 indicates brain, a value of 0 indicates non-brain.
+echo Obviously, calculations will be done only on indicated brain voxels.
+echo ""
+echo -n "ENTER the name of the maskfile (including .img extension): "
+set maskfile = $<
+while (! -e $maskfile)
+    echo $maskfile does not exist.
+    echo ""
+    echo -n "ENTER the name of the maskfile (including .img extension): "
+    set maskfile = $<
+end
+echo ""
+echo $maskfile will be used as the maskfile.
+echo ""
+
+
+# QUERY USER FOR NUMBER OF TIMES TO REPLICATE FIRST AND LAST SLICES
+echo ""
+echo A word \(warning\) on padding of images.  Convolutions performed
+echo in the spatial rather than the spectral domain may take an
+echo unacceptably long time.  Thus, smoothing will be done using 4D
+echo Fast Fourier Transforms \(FFT\'s\), for speed when convolving the
+echo image volumes with the 4D smoothing filter. Convolutions done with
+echo 4D FFT\'s are circular convolutions.  Voxels to the left and right
+echo of a particular voxel will be averaged with that particular voxel,
+echo which is what one would want, but voxels at the extreme right
+echo edge of the image volume will wrap around and be averaged with
+echo voxels at the extreme left edge\; thus, \"circular\" convolution.
+echo A similar effect will be seen along the top and bottom edges of an
+echo image.  This wrap-around effect won\'t be important if there is a
+echo non-brain space surrounding the brain which is large compared to
+echo the FWHM of the smoothing filter along that axis.  This is
+echo probably true of most neuroimages in-plane.  But, one must also
+echo consider the wrap-around effect along the Z-axis.  In most
+echo functional neuroimages today there are brain voxels in both the
+echo first and last slice, and one wouldn\'t want to average voxels
+echo from the first slice with voxels from the last slice.  To prevent
+echo this from happening, images will be padded with zeros along the
+echo Z-axis.  A correction for edge artifacts will be made along
+echo all four axes.
+echo ""
+echo -n Type Return when ready...
+set dummy = $<
+echo ""
+echo In this implementation of 4D smoothing, the user is allowed to
+echo indicate how many zero slices to pad with along the Z-axis.
+echo After convolution, the replicated slices will be removed, and
+echo smoothed images of the same dimensions as the original image
+echo volumes will be produced.  Again, a correction for edge artifacts
+echo in smoothing will be done along all four axes.
+echo ""
+echo The number of zero slices to pad with will depend on
+echo how big the FWHM of your smoothing filter is in Z.  Consider
+echo padding with at least two zero slices for echo voxel-length the
+echo FWHM in Z the smoothing filter is.  Further, consider padding
+echo with enough zero slices so that the total number of slices during
+echo convolution will echo be an integer power of 2.  \(FFT requires
+echo data to be an integer power of 2 in all dimensions, a condition
+echo often met in X and Y but not so often in Z.\)  E.g., suppose you
+echo had a 15-slice image volume.  Consider padding with 17 slices,
+echo which would give a total of 15+17=32 slices\; 32 is an integer
+echo power of 2.
+echo ""
+echo If you do no smoothing in Z, then padding with zero slices is
+echo unnecessary, and you can just enter a 0 for the next prompt.
+echo ""
+echo -n "ENTER the number of zero slices to pad with: "
+set num_zero_slices = $<
+echo ""
+echo The data to be smoothed will be padded with $num_zero_slices zero slices.
+echo ""
+echo ""
+echo Note that this wrap-around effect may cause problems along the
+echo time axis as well, so the series of volumes will also be padded
+echo with some zero volumes.  Otherwise, voxels in the first image volume
+echo may be averaged with voxels in the last image volume.  Again,
+echo the number of zero slices to pad with will depend on how big the
+echo FWHM of your smoothing filter is along the time axis.  Consider
+echo padding with at least two zero volumes for echo voxel-length the
+echo FWHM in time the smoothing filter is.  Further, consider padding
+echo with enough zero volumes so that the total number of volumes during
+echo convolution will echo be an integer power of 2.  \(FFT requires
+echo data to be an integer power of 2 in all dimensions.\)
+echo ""
+echo If you do no smoothing along the time axis, then padding with zero
+echo volumes is unnecessary, and you can just enter a 0 for the next prompt.
+echo ""
+echo -n "ENTER the number of zero volumes to pad with: "
+set num_zero_vols = $<
+echo ""
+echo The data to be smoothed will be padded with $num_zero_vols zero volumes.
+echo ""
+
+
+# QUERY USER FOR FWHM'S TO GENERATE GAUSSIAN SMOOTHING KERNEL AT RUNTIME
+echo ""
+echo Note on smoothing of functional MR images: because slices are not
+echo acquired simultaneously, the Z-axis is confounded with time.
+echo Thus, if you smooth along the Z-axis in fMR images, you will also
+echo be performing some smoothing in time.  This temporal confound will
+echo be more important for longer TR\'s.  If your analysis would be
+echo compromised by this temporal confound \(e.g., you are performing
+echo an ANCOVA, or are estimating the hemodynamic response function\),
+echo consider doing no smoothing in the Z-dimension, and enter a \'0\'
+echo for the FWHM in that dimension.  For shorter TR\'s and for certain
+echo types of analyses, this effect may be of no concern.
+echo ""
+echo In many data sets, the voxel size in Z, i.e., slice thickness, is greater
+echo than the voxel size in X and Y.  Thus, there is more volume averaging
+echo along Z than in X and Y.  This means that these data sets may be more
+echo \"smooth\" to begin with along Z than in X and Y.  So, consider choosing
+echo a FWHM in Z less than in X and Y when designing the Gaussian smoothing
+echo kernel in this smoothing routine, if you want smoothness to be fairly
+echo isotropic in all dimensions.
+echo ""
+echo Perhaps the brain itself has an anatomic or physiologic smoothness which
+echo is greater along one axis than another.  Just a thought.
+echo ""
+echo If a priori you\'re interested in detecting smaller brain structures,
+echo consider doing minimal or no spatial smoothing.  If, on the other hand,
+echo a priori you\'re interested in detecting larger brain structures, consider
+echo doing more spatial smoothing.
+echo ""
+echo -n "FWHM in X, in VOXEL LENGTHS: "
+set FWHMx = $<
+echo -n "FWHM in Y, in VOXEL LENGTHS: "
+set FWHMy = $<
+echo -n "FWHM in Z, in VOXEL LENGTHS: "
+set FWHMz = $<
+echo -n "FWHM in time, in interscan intervals: "
+set FWHMt = $<
+
+
+echo ""
+echo '******************************************************'
+echo ""
+echo Finally, you must type in a number between 0 and 19.
+echo The \'nice\' command will use this number to adjust
+echo the priority of this process.  \'0\' will result in
+echo the default priority being used.  Higher numbers will
+echo result in lower priorities.  We recommend \'0\' to be
+echo used during off hours, and higher \(nicer\) numbers to
+echo be used during regular work hours.
+echo ""
+echo -n "Priority adjustment number? "
+set priority = $<
+if ($priority == "") then
+    set priority = 0
+endif
+echo $priority >> fidap.log
+
+
+# CHECK WITH USER IF IT'S OKAY TO GO ON
+echo ""
+echo -n "Continue <y/n>? "
+set choice = $<
+if ($choice != "y") then
+    echo QUITTING SHELL SCRIPT....
+    sleep 2
+    exit
+endif
+
+
+# CALL convolve4D16bit:
+echo `date` $user >> fidap.log
+echo nice -$priority convolve4D $hdrfile $textfile $maskfile $num_zero_slices $num_zero_vols \
+                                $FWHMx $FWHMy $FWHMz $FWHMt >> fidap.log
+echo nice -$priority convolve4D $hdrfile $textfile $maskfile $num_zero_slices $num_zero_vols \
+                                $FWHMx $FWHMy $FWHMz $FWHMt
+nice -$priority convolve4D $hdrfile $textfile $maskfile $num_zero_slices $num_zero_vols \
+                                $FWHMx $FWHMy $FWHMz $FWHMt
+
+
+# MAKE HEADER FOR kernel IMAGE, AND FOR SMOOTHED IMAGES
+#makeheader4 $kernelfile:r.hdr $dims 1 32 1000 0 1000 0 16
+set filelist = `cat $textfile`
+foreach item($filelist)
+    set file = $item:t
+    set pathname = $item:h
+    if ( $file == $pathname ) then
+        set newfile = S$file
+    else
+        set newfile = $pathname/S$file
+    endif
+    if ($bits_per_pix == 8) then
+        set imgmax = `max8bit2 $newfile`
+        set imgmin = `min8bit2 $newfile`
+        set datatype = 2
+    else if ($bits_per_pix == 16) then
+        set imgmax = `max16bit2 $newfile`
+        set imgmin = `min16bit2 $newfile`
+        set datatype = 4
+    else if ($bits_per_pix == 32) then
+        set imgmax = `maxfp $newfile`
+        set imgmin = `minfp $newfile`
+        set datatype = 16
+    endif
+    makeheader4 $newfile:r.hdr $dims 1 $bits_per_pix $imgmax $imgmin \
+                                                $imgmax $imgmin $datatype
+end
+
+
+# CONVERT FLOATING POINT KERNEL IMAGE FILE TO BYTE, FOR VIEWING IN ANALYZE
+#fp2byte_script $kernelfile
+
+exit
+

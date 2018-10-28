@@ -1,0 +1,4 @@
+mult: mult.o
+	$(CC) $(EXTRAS) mult.o -o mult
+mult.o: mult.c
+	$(CC) $(EXTRAS) -c mult.c

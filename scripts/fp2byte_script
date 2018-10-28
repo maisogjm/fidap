@@ -1,0 +1,46 @@
+#! /bin/csh -f
+# fp2byte_script
+# 11.15.94 by Jose' Ma. Maisog, M.D.
+# Laboratory of Psychology and Psychopathology,
+# National Institute of Mental Health
+
+# Shell script to convert floating point ANALYZE images to byte images.
+# If floating point images have ANALYZE header files, info from these
+# will be used to create proper headers for the new byte images.
+
+# C executables called: fp2byte, get_dims_from, maxfp, minfp, makeheader4
+
+# Check command line arguments.
+if ($#argv == 0) then
+    echo fp2byte_script: Need name of floating point image file\(s\).
+    exit 1
+endif
+
+# Loop over command line arguments.
+set index = 1
+while ($index <= $#argv)
+
+    # Convert floating point image(s) to byte image(s).
+    if (! -e $argv[$index]) then
+	echo File \"$argv[$index]\" does not exist.
+    else
+	echo Converting $argv[$index] to byte image B$argv[$index].
+	fp2byte $argv[$index] B$argv[$index] >> /dev/null
+
+	# Make headers for byte images.  Need info from
+	# floating point image header files, if they exist.
+	if (! -e $argv[$index]:r.hdr) then
+	    echo "  $argv[$index]:r.hdr does not exist, so fp2byte_script"
+	    echo "  is unable to create header for B$argv[$index]."
+	else
+	    set dims = `get_dims_from $1:r.hdr`
+	    set fpmax = `maxfp $argv[$index]:r.img`
+	    set fpmin = `minfp $argv[$index]:r.img`
+	    echo makeheader4 B$argv[$index]:r.hdr $dims 1 8 255 0 $fpmax $fpmin 2
+	    makeheader4 B$argv[$index]:r.hdr $dims 1 8 255 0 $fpmax $fpmin 2
+	endif
+    endif
+
+    # Increment index
+    @ index++
+end

@@ -1,0 +1,4 @@
+mean16bit2: mean16bit2.o
+	$(CC) $(EXTRAS) mean16bit2.o -o mean16bit2
+mean16bit2.o: mean16bit2.c
+	$(CC) $(EXTRAS) -c mean16bit2.c

@@ -1,0 +1,4 @@
+sgnFP: sgnFP.o
+	$(CC) $(EXTRAS) sgnFP.o -o sgnFP
+sgnFP.o: sgnFP.c
+	$(CC) $(EXTRAS) -c sgnFP.c

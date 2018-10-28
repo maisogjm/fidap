@@ -1,0 +1,4 @@
+subtract: subtract.o
+	$(CC) $(EXTRAS) subtract.o -o subtract
+subtract.o: subtract.c
+	$(CC) $(EXTRAS) -c subtract.c

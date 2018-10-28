@@ -1,0 +1,6 @@
+dopixsampfp: dopixsampfp.o imgio.o
+	$(CC) $(EXTRAS) dopixsampfp.o imgio.o -o dopixsampfp
+dopixsampfp.o: dopixsampfp.c
+	$(CC) $(EXTRAS) -c dopixsampfp.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

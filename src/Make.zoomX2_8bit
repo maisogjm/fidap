@@ -1,0 +1,7 @@
+zoomX2_8bit: zoomX2_8bit.o imgio.o
+	$(CC) $(EXTRAS) zoomX2_8bit.o imgio.o -o zoomX2_8bit
+zoomX2_8bit.o: zoomX2_8bit.c
+	$(CC) $(EXTRAS) -c zoomX2_8bit.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c
+

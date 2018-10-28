@@ -1,0 +1,278 @@
+#! /bin/csh -f
+# paired_t_script
+# 10.09.93 by Jose' Ma. Maisog, M.D.
+# Laboratory of Psychology and Psychopathology,
+# National Institute of Mental Health
+
+#
+# Shell script to perform a paired t-test on 16-bit ANALYZE images.
+
+# C executables called: fmri_pairedt_ratio, makeheader4,
+# maxfp, minfp, max16bit2, min16bit2
+
+# Also calls the C shell scripts scroll and fp2byte_script
+
+# QUERY USER FOR IMAGE DIRECTORY
+scroll 10
+echo  ""
+echo '******************************************************'
+echo  ""
+echo ""
+echo This script will perform a paired t-test between two groups of 16-bit
+echo ANALYZE images.  The images must all be located in the same directory,
+echo and there must be at least one ANALYZE header .hdr file which contains
+echo the appropriate image dimension information.  You must have read/write
+echo access to the directory in which the images are kept.
+echo ""
+echo -n "Please enter directory for output files: "
+set dir = $<
+while (! -d $dir)
+    echo Directory $dir does not exist.
+    echo ""
+    echo -n "Please enter directory for output files: "
+    set dir = $<
+end
+cd $dir
+touch fidap.log
+echo '******************************************************' >> fidap.log
+echo `date` " : " $user " : " paired_t_script >> fidap.log
+
+# SHOW USER CONTENTS OF IMAGE DIRECTORY
+echo  ""
+echo '******************************************************'
+echo  ""
+set filelist = `\ls *.img`
+set numANLZfiles = $#filelist
+echo There are $numANLZfiles ANALYZE images in ${dir}:
+\ls *.img
+echo ""
+echo -n Press Return to continue...
+set dummy = $<
+if ($numANLZfiles == "0") then
+    exit
+endif
+
+# QUERY USER FOR NAME OF INPUT TEXT FILE, IF IT ALREADY EXISTS
+echo  ""
+echo '******************************************************'
+echo  ""
+echo This script will perform a paired t-test between two groups of 16-bit
+echo ANALYZE images.  The two groups must have the echo same number of images.
+echo ""
+echo To run this script, you must first make a text file.
+echo ""
+echo This file should contain the names of the images in the first group,
+echo followed by the names of the images in the second group, one .img
+echo filename pair per line.  Following each pair of names you must place
+echo a number which will be used to weight the global mean intensities of
+echo "the images when ratio-adjusting the images' global means (eg, '1')."
+echo ""
+echo -n Press Return to continue...
+set dummy = $<
+echo""
+set example = `which paired_t.txt`
+echo For example:
+echo ""
+more $example
+echo ""
+echo If this text file doesn\'t yet exist, you can create it using a text editor
+echo \(eg, vi, emacs, or ez\), or you can create it via this script.
+echo Note that the contrast will be group 2 minus group 1, not the other way
+echo around.
+echo ""
+echo CHOICES:
+echo "  (1) The text file is already made."
+echo "      Continue with this script."
+echo "  (2) Make the text file now, using either"
+echo "      vi, emacs, or ez."
+echo "  (3) Create the text file by directly typing"
+echo "      in the filenames via this script."
+echo "  (4) Exit this script, and make the text file"
+echo "      (using, eg,  vi, emacs, or ez).  After it is"
+echo "      created you must return to this script."
+echo ""
+echo -n " CHOOSE ACTION: "
+set choice = $<
+while ($choice != "1" && $choice != "2" && $choice != "3" && $choice != "4")
+    echo -n " CHOOSE ACTION: "
+    set choice = $<
+end
+
+switch ($choice)
+    # FILE ALREADY MADE.
+    case 1:
+    echo ""
+    echo -n "Type in name of text file: "
+    set textfile = $<
+    while (! -e $textfile)
+	echo $textfile does not exist.
+	echo ""
+	echo -n "Type in name of text file: "
+	set textfile = $<
+    end
+
+    echo ""
+    breaksw
+
+    # MAKE THE TEXT FILE VIA THIS SCRIPT
+    case 2:
+    echo ""
+    echo -n "Type in desired name for text file: "
+    set textfile = $<
+    echo ""
+    echo -n Type in desired editor \(eg, \"vi\" or \"emacs\"\)\:
+    set editor = $<
+    echo ""
+    echo ""
+    echo Now entering the editor $editor, creating file $textfile.
+    echo This file should contain the names of the images in the first group,
+    echo followed by the names of the images in the second group, one .img
+    echo filename pair per line.  Following each pair of names you must place
+    echo a number which will be used to weight the global mean intensities of
+    echo "the images when ratio-adjusting the images' global means (eg, '1')."
+    echo -n Type Return when ready...
+    set dummy = $<
+    echo ""
+    eval `echo $editor $textfile`
+    echo ""
+    echo ""
+    breaksw
+
+    # MAKE THE TEXT FILE VIA THIS SCRIPT
+    case 3:
+    echo ""
+    echo -n "Type in desired name for text file: "
+    set textfile = $<
+    echo ""
+    echo I shall now create the file $textfile.  You must now type in the names
+    echo of the images in the first group, followed by the names of the images
+    echo in the second group, one .img filename pair per line.  Following each
+    echo pair of names you must place a number which will be used to weight
+    echo the global mean intensities of "the images when ratio-adjusting the
+    echo images' global means (eg, '1')." After the last carriage return,
+    echo type a \<Control-D\>.
+    echo ""
+    cat > $textfile
+    breaksw
+
+    # EXIT SCRIPT, MAKE THE TEXT FILE, AND THEN RETURN TO THIS SCRIPT.
+    case 4:
+    echo You have chosen to exit this script.  You must now create the text file.
+    echo This file should contain the names of the images in the first group,
+    echo followed by the names of the images in the second group, one .img
+    echo filename pair per line.  Following each pair of names you must place
+    echo a number which will be used to weight the global mean intensities of
+    echo "the images when ratio-adjusting the images' global means (eg, '1')."
+    echo Then re-run this script.
+    echo -n Type Return when ready...
+    set dummy = $<
+    exit
+    breaksw
+
+endsw
+echo Input text file is $textfile >> fidap.log
+
+# QUERY USER FOR NAME OF ANALYZE .hdr FILE
+echo  ""
+echo '******************************************************'
+echo  ""
+echo Here are the ANALYZE header files in ${dir}:
+\ls *.hdr
+echo ""
+echo "Please enter the name of one of these ANALYZE header"
+echo "files which has the correct image dimensions for your"
+echo -n "images (including .hdr extension): "
+set hdrfile = $<
+while (! -e $hdrfile)
+    echo $hdrfile does not exist.
+    echo ""
+    echo -n "Type in name of header file file: "
+    set hdrfile = $<
+end
+set dims = `get_dims_from $hdrfile`
+echo Header file is $hdrfile >> fidap.log
+
+# QUERY USER FOR DESIRED NAME OF FLOATINT POINT .img FILE FOR t MAP
+echo  ""
+echo '******************************************************'
+echo  ""
+echo "The t map will be written to a floating point .img file."
+echo "Please enter the desired name of the .img file,"
+echo -n "including .img extension: "
+set ptfile = $<
+echo T-test map will be $ptfile >> fidap.log
+
+# QUERY USER FOR DESIRED NAME OF FLOATING POINT .img FILE FOR DIFFERENCE OF MEANS IMAGE
+echo  ""
+echo '******************************************************'
+echo  ""
+echo "The difference of the group means will be written to a floating point .img file."
+echo "Please enter the desired name of the .img file,"
+echo -n "including .img extension: "
+set diffile = $<
+echo Difference map will be $diffile >> fidap.log
+
+# QUERY USER WHETHER A SCALED 16-BIT IMAGE IS DESIRED
+echo  ""
+echo '******************************************************'
+echo  ""
+echo If you wish, a scaled 16-bit image of the t map
+echo can be generated.  This image will be scaled by a factor
+echo of 1000.  Thus, a t of 1.672 will have a 16-bit
+echo value of 1672.  This can be useful if you are doing
+echo pixel sampling within ANALYZE.
+echo ""
+echo -n "Do you want scaled 16-bit images <y/n>? "
+set scaled_imgs = $<
+
+# CHECK WITH USER IF IT'S OKAY TO GO ON
+echo  ""
+echo '******************************************************'
+echo  ""
+echo A mean image will be generated from the images in
+echo runs 1 AND 2.  It will be thresholded to generate
+echo a mask of the brain in the following manner.
+echo ""
+echo You will be asked to specify a number which shall be
+echo used as the threshold.  The maximum voxel intensity of
+echo the mean image, max_vox, will be determined, and
+echo then all voxels with intensity greater than or equal
+echo to max_vox \* threshold / 100 will be set to 1 in the
+echo mask\; all others will be set to 0 in the mask.
+echo Thus, threshold is expressed as a percentage.
+echo For example, if you wish the threshold to be 33.33%
+echo of max_vox, type in \"33.33\" instead of \"0.33\".
+echo ""
+echo -n "Continue <y/n>? "
+set choice = $<
+if ($choice != "y") then
+    echo QUITTING SHELL SCRIPT....
+    sleep 2
+    exit
+endif
+
+# CALL fmri_pairedt_ratio:
+echo fmri_pairedt_ratio $hdrfile $textfile $ptfile $diffile
+echo fmri_pairedt_ratio $hdrfile $textfile $ptfile $diffile >> fidap.log
+fmri_pairedt_ratio $hdrfile $textfile $ptfile $diffile
+
+# CONVERT FLOATING POINT FILES TO 8-BIT FILES FOR VIEWING IN ANALYZE
+foreach file($ptfile $diffile meanPT.img)
+    set max = `maxfp $file`
+    set min = `minfp $file`
+    makeheader4 $file:r.hdr $dims 1 32 255 0 $max $min 16 1
+end
+fp2byte_script $ptfile $diffile meanPT.img
+
+# GENERATE SCALED 16-BIT IMAGES IF DESIRED
+if ($scaled_imgs == "y") then
+    fp2word2 $ptfile W$ptfile 1000
+    set maxFP = `maxfp $ptfile`
+    set minFP = `minfp $ptfile`
+    set max16 = `max16bit2 W$ptfile`
+    set min16 = `min16bit2 W$ptfile`
+    makeheader4 W$ptfile:r.hdr $dims 1 16 $max16 $min16 $maxFP minFP 4 1
+endif
+
+exit
+

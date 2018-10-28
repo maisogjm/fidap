@@ -1,0 +1,4 @@
+az2vox_index: az2vox_index.o
+	$(CC) $(EXTRAS) az2vox_index.o -o az2vox_index
+az2vox_index.o: az2vox_index.c
+	$(CC) $(EXTRAS) -c az2vox_index.c

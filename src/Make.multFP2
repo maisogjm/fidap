@@ -1,0 +1,4 @@
+multFP2: multFP2.o
+	$(CC) $(EXTRAS) multFP2.o -o multFP2
+multFP2.o: multFP2.c
+	$(CC) $(EXTRAS) -c multFP2.c

@@ -1,0 +1,6 @@
+get_dims_from: get_dims_from.o imgio.o
+	$(CC) $(EXTRAS) get_dims_from.o imgio.o -o get_dims_from
+get_dims_from.o: get_dims_from.c
+	$(CC) $(EXTRAS) -c get_dims_from.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

@@ -1,0 +1,4 @@
+sqrt: sqrt.o
+	$(CC) $(EXTRAS) sqrt.o -o sqrt -lm
+sqrt.o: sqrt.c
+	$(CC) $(EXTRAS) -c sqrt.c

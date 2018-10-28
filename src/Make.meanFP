@@ -1,0 +1,4 @@
+meanFP: meanFP.o
+	$(CC) $(EXTRAS) meanFP.o -o meanFP
+meanFP.o: meanFP.c
+	$(CC) $(EXTRAS) -c meanFP.c

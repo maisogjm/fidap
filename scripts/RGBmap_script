@@ -1,0 +1,427 @@
+#!/bin/csh -f
+# RGBmap_script
+# 04.09.96 by Jose' Ma. Maisog, M.D.
+# Laboratory of Psychology and Psychopathology,
+# National Institute of Mental Health
+
+#
+# Shell script to create an RGB map from three floating point
+# images.
+
+# C executables called: get_dims_from, clusterGE_nocorners, clusterLENE0_nocorners,
+# makemaskWGT, byte2fp, multFP1, absFP, meanFP, divideFP1, maxFP2, sqrt_sum_sqrFP2,
+# excise2, fp2byte, overlay24bitON8bit, overlay24bitON16bit, makeheader4,
+# make_triangle_palette
+
+# Also calls the C shell script scroll
+
+
+# Query user for directory
+scroll 10
+echo  ""
+echo '******************************************************'
+echo  ""
+echo -n "Enter the name of the directory containing data files: "
+set dir = $<
+while (! -d $dir)
+    echo Directory $dir does not exist.
+    echo ""
+    echo -n "Enter the name of the directory containing data files: "
+    set dir = $<
+end
+cd $dir
+touch fidap.log
+echo '******************************************************' >> fidap.log
+echo `date` " : " $user " : " RGBmap_script >> fidap.log
+echo "The following lines are EXACTLY as you've typed them into the script:" >> fidap.log
+
+
+# Query user for input images
+echo  ""
+echo '******************************************************'
+echo  ""
+echo "Enter the name of a FLOATING POINT STATISTICAL MAP which will be"
+echo "thresholded.  Areas which pass the threshold will be shown in color"
+echo "according to specified weights, and areas which don't pass the"
+echo "threshold will be shown in grayscale intensities determined from"
+echo "an 8- or 16-bit BASE SCAN."
+echo ""
+echo -n "Name of floating point statistical map (including .img extension)? "
+set stats_map = $<
+while(! -e $stats_map)
+    echo File $stats_map does not exist.
+    echo ""
+    echo -n "Name of floating point statistical map (including .img extension)? "
+    set stats_map = $<
+end
+# The following line is to get rid of spaces at the beginning or end.
+set stats_map = $stats_map
+echo $stats_map >> fidap.log
+
+echo  ""
+echo '******************************************************'
+echo  ""
+echo -n "Name of 8-bit mask file (including .img extension)? "
+set mask = $<
+while(! -e $mask)
+    echo File $mask does not exist.
+    echo ""
+    echo -n "Name of 8-bit mask file (including .img extension)? "
+    set mask = $<
+end
+# The following line is to get rid of spaces at the beginning or end.
+set mask = $mask
+echo $mask >> fidap.log
+
+echo  ""
+echo '******************************************************'
+echo  ""
+echo ""
+echo -n "Name of floating point map for RED component?   "
+set red_map = $<
+while(! -e $red_map)
+    echo File $red_map does not exist.
+    echo ""
+    echo -n "Name of floating point map for RED component?   "
+    set red_map = $<
+end
+# The following line is to get rid of spaces at the beginning or end.
+set red_map = $red_map
+echo $red_map >> fidap.log
+
+echo ""
+echo -n "Name of floating point map for GREEN component? "
+set green_map = $<
+while(! -e $green_map)
+    echo File $green_map does not exist.
+    echo ""
+    echo -n "Name of floating point map for GREEN component? "
+    set green_map = $<
+end
+# The following line is to get rid of spaces at the beginning or end.
+set green_map = $green_map
+echo $green_map >> fidap.log
+
+echo ""
+echo -n "Name of floating point map for BLUE component?  "
+set blue_map = $<
+while(! -e $blue_map)
+    echo File $blue_map does not exist.
+    echo ""
+    echo -n "Name of floating point map for BLUE component?  "
+    set blue_map = $<
+end
+# The following line is to get rid of spaces at the beginning or end.
+set blue_map = $blue_map
+echo $blue_map >> fidap.log
+
+echo ""
+echo -n "Name for 24-bit RGB output file (including .img extension)? "
+set rgb_map = $<
+echo $rgb_map >> fidap.log
+#while (($rgb_map:e != "img") || (-e $rgb_map))
+#    if ($rgb_map:e != "img") then
+#        echo "Name must end with .img extension."
+#        echo ""
+#        echo -n "Name for 24-bit RGB output file (including .img extension)? "
+#        set rgb_map = $<
+#    endif
+#    if (-e $rgb_map) then
+#        echo "$rgb_map already exists.  Choose another name."
+#        echo ""
+#        echo -n "Name for 24-bit RGB output file (including .img extension)? "
+#        set rgb_map = $<
+#    endif
+#end
+
+echo  ""
+echo '******************************************************'
+echo ""
+echo -n "Name of base scan (including .img extension)? "
+set base_scan = $<
+while(! -e $base_scan)
+    echo File $base_scan does not exist.
+    echo ""
+    echo -n "Name of base scan (including .img extension)? "
+    set base_scan = $<
+end
+echo $base_scan >> fidap.log
+
+echo ""
+echo ""
+echo "Choose one of the following:"
+echo ""
+echo "(1) Base scan $base_scan is 8-bit."
+echo ""
+echo "(2) Base scan $base_scan is 16-bit."
+echo ""
+echo -n "Choice <1/2>? "
+set base_scan_type = $<
+while(($base_scan_type != 1) && ($base_scan_type != 2))
+    echo Type in a \'1\' or a \'2\'.
+    echo ""
+    echo -n "Choice <1/2>? "
+    set base_scan_type = $<
+end
+echo $base_scan_type >> fidap.log
+
+
+echo  ""
+echo '******************************************************'
+echo ""
+echo "Choose one of the following:"
+echo ""
+echo "(1) An UPPER threshold is to be applied to the statistical map $stats_map."
+echo "    (e.g., Z-score, t-test, F-test maps)"
+echo ""
+echo "(2) A LOWER threshold is to be applied to the statistical map $stats_map."
+echo "    (e.g., Wilks' Lambda maps)"
+echo ""
+echo -n "Choice <1/2>? "
+set thresh_type = $<
+while(($thresh_type != 1) && ($thresh_type != 2))
+    echo Type in a \'1\' or a \'2\'.
+    echo ""
+    echo -n "Choice <1/2>? "
+    set thresh_type = $<
+end
+echo $thresh_type >> fidap.log
+echo ""
+echo ""
+echo -n "Threshold? "
+set threshold = $<
+echo Will use $threshold as the statistical map threshold.
+echo $threshold >> fidap.log
+
+
+echo  ""
+echo '******************************************************'
+echo ""
+echo The components of the 24-bit color map can be scaled in several ways.
+echo Let Vr, Vg, and Vb be the magnitudes of the red, green, and blue
+echo components.  The 8-bit red value in the 24-bit color map can be set
+echo to Vr/D, where D equals one of the following:
+echo ""
+echo "Choose one of the following:"
+echo ""
+echo "(1) mean(Vr, Vg, Vb)"
+echo "(2) max(Vr, Vg, Vb)"
+echo "(3) sqrt((Vr*Vr)+(Vg*Vg)+(Vb*Vb))"
+echo ""
+echo -n "Choice <1/2/3>? "
+set rgb_scaling = $<
+while(($rgb_scaling != 1) && ($rgb_scaling != 2) && ($rgb_scaling != 3))
+    echo Type in a \'1\', \'2\', or \'3\'.
+    echo ""
+    echo -n "Choice <1/2/3>? "
+    set rgb_scaling = $<
+end
+echo $rgb_scaling >> fidap.log
+echo ""
+echo "Also, an RGB image of a triangle with the proper scaling will"
+echo "be created.  You can choose the color of the background."
+echo "0 is black, 255 is white, and integers in between are some"
+echo "shade of gray."
+echo ""
+echo -n "Background color for triangle.img? "
+set background = $<
+while (($background < 0) && ($background >255))
+    echo Type in an integer between 0 and 255 inclusive.
+    echo ""
+    echo -n "Background color for triangle.img? "
+    set background = $<
+end
+echo $background>> fidap.log
+
+
+echo  ""
+echo '******************************************************'
+echo ""
+echo -n "The statistical map will be thresholded with"
+if (thresh_type == 1) then
+    echo " an UPPER"
+else
+    echo " a LOWER"
+endif
+echo threshold of $threshold.
+echo ""
+echo This will form clusters of contiguous voxels of varying size.  Only clusters
+echo greater than a certain size threshold will be displayed in color.
+echo ""
+echo -n "Size threshold? "
+set size_thresh = $<
+echo $size_thresh >> fidap.log
+
+set dims = `get_dims_from $mask:r.hdr`
+set xdim = $dims[1]
+set ydim = $dims[2]
+set zdim = $dims[3]
+
+echo "" >> fidap.log
+echo SUMMARY: >> fidap.log
+echo Statistical map is $stats_map >> fidap.log
+echo Mask is $mask >> fidap.log
+echo RED component is $red_map >> fidap.log
+echo GREEN component is $green_map >> fidap.log
+echo BLUE component is $blue_map >> fidap.log
+if ($base_scan_type == "1") then
+    echo Base scan $base_scan is 8-bit >> fidap.log
+else
+    echo Base scan $base_scan is 16-bit >> fidap.log
+endif
+if ($thresh_type == "1") then
+    echo Threshold of $threshold is an UPPER threshold >> fidap.log
+else
+    echo Threshold of $threshold is an LOWER threshold >> fidap.log
+endif
+if ($rgb_scaling == "1") then
+    echo "mean(Vr, Vg, Vb) will be used to scale the RGB map" >> fidap.log
+else if ($rgb_scaling == "2") then
+    echo "max(Vr, Vg, Vb) will be used to scale the RGB map" >> fidap.log
+else if ($rgb_scaling == "3") then
+    echo "sqrt((Vr*Vr)+(Vg*Vg)+(Vb*Vb)) will be used to scale the RGB map" >> fidap.log
+endif
+echo Size threshold of $size_thresh will be used >> fidap.log
+
+# Make mask of clusters
+echo ""
+echo ""
+echo '******************************************************'
+echo ""
+echo Thresholding statistical map $stats_map to make mask,
+echo forming clusters of at least size $size_thresh...
+echo ""
+if ($thresh_type == 1) then
+    echo clusterGE_nocorners $stats_map:r.hdr $stats_map Wblobs_$stats_map \
+        Wblobs_$stats_map:r.txt1 Wblobs_$stats_map:r.txt2 $threshold \
+	$mask $size_thresh
+    echo clusterGE_nocorners $stats_map:r.hdr $stats_map Wblobs_$stats_map \
+        Wblobs_$stats_map:r.txt1 Wblobs_$stats_map:r.txt2 $threshold \
+	$mask $size_thresh>> fidap.log
+    clusterGE_nocorners $stats_map:r.hdr $stats_map Wblobs_$stats_map \
+        Wblobs_$stats_map:r.txt1 Wblobs_$stats_map:r.txt2 $threshold \
+	$mask $size_thresh
+else
+    echo clusterLENE0_nocorners $stats_map:r.hdr $stats_map Wblobs_$stats_map \
+        Wblobs_$stats_map:r.txt1 Wblobs_$stats_map:r.txt2 $threshold \
+	$mask $size_thresh
+    echo clusterLENE0_nocorners $stats_map:r.hdr $stats_map Wblobs_$stats_map \
+        Wblobs_$stats_map:r.txt1 Wblobs_$stats_map:r.txt2 $threshold \
+	$mask $size_thresh >> fidap.log
+    clusterLENE0_nocorners $stats_map:r.hdr $stats_map Wblobs_$stats_map \
+        Wblobs_$stats_map:r.txt1 Wblobs_$stats_map:r.txt2 $threshold \
+	$mask $size_thresh
+endif
+makemaskWGT Wblobs_$stats_map BWblobs_$stats_map 0
+byte2fp BWblobs_$stats_map FBWblobs_$stats_map >> /dev/null
+rm BWblobs_$stats_map Wblobs_$stats_map:r.txt1 Wblobs_$stats_map:r.txt2
+rm Wblobs_$stats_map
+
+# Mask regression coefficient maps
+byte2fp $mask FP$mask
+multFP1 FBWblobs_$stats_map FP$mask $green_map M$green_map | grep writing
+multFP1 FBWblobs_$stats_map FP$mask $red_map   M$red_map   | grep writing
+multFP1 FBWblobs_$stats_map FP$mask $blue_map  M$blue_map  | grep writing
+rm FBWblobs_$stats_map FP$mask
+
+# Construct 24-bit color map of regression coefficients.
+echo ""
+echo ""
+echo '******************************************************'
+echo ""
+echo Making 24-bit map of regression coefficients...
+echo ""
+    # Then calculate maps of absolute values of regression coefficients.
+    absFP M$red_map   AM$red_map   | grep writing
+    absFP M$green_map AM$green_map | grep writing
+    absFP M$blue_map  AM$blue_map  | grep writing
+    rm M$red_map M$green_map M$blue_map
+
+    # Calculate RED, GREEN, and BLUE proportional maps
+    # Using mean(Vr, Vg, Vb)
+    if ($rgb_scaling == 1) then
+        echo meanFP AM$red_map AM$green_map AM$blue_map denominator.$$.img 
+        echo meanFP AM$red_map AM$green_map AM$blue_map denominator.$$.img  >> fidap.log
+        meanFP AM$red_map AM$green_map AM$blue_map denominator.$$.img | grep writing
+#        addFP1 AM$red_map AM$green_map AM$blue_map denominator.$$.img | grep writing
+        divideFP1 AM$red_map   denominator.$$.img Rproportion.img | grep writing
+        divideFP1 AM$green_map denominator.$$.img Gproportion.img | grep writing
+        divideFP1 AM$blue_map  denominator.$$.img Bproportion.img | grep writing
+        rm AM$red_map AM$green_map AM$blue_map denominator.$$.img
+
+    # Using max(Vr, Vg, Vb)
+    else if ($rgb_scaling == 2) then
+        echo maxFP2 AM$red_map AM$green_map AM$blue_map denominator.$$.img
+        echo maxFP2 AM$red_map AM$green_map AM$blue_map denominator.$$.img >> fidap.log
+        maxFP2 AM$red_map AM$green_map AM$blue_map denominator.$$.img | grep writing
+        divideFP1 AM$red_map   denominator.$$.img Rproportion.img | grep writing
+        divideFP1 AM$green_map denominator.$$.img Gproportion.img | grep writing
+        divideFP1 AM$blue_map  denominator.$$.img Bproportion.img | grep writing
+        rm AM$red_map AM$green_map AM$blue_map denominator.$$.img
+
+    # Using sqrt((Vr*Vr)+(Vg*Vg)+(Vb*Vb))
+    else if ($rgb_scaling == 3) then
+        echo sqrt_sum_sqrFP2 AM$red_map AM$green_map AM$blue_map denominator.$$.img
+        echo sqrt_sum_sqrFP2 AM$red_map AM$green_map AM$blue_map denominator.$$.img >> fidap.log
+        sqrt_sum_sqrFP2 AM$red_map AM$green_map AM$blue_map \
+                                                denominator.$$.img | grep writing
+        divideFP1 AM$red_map   denominator.$$.img Rproportion.img | grep writing
+        divideFP1 AM$green_map denominator.$$.img Gproportion.img | grep writing
+        divideFP1 AM$blue_map  denominator.$$.img Bproportion.img | grep writing
+        rm denominator.$$.img SQAM$red_map SQAM$green_map SQAM$blue_map
+    endif
+
+
+echo ""
+echo ""
+echo '******************************************************'
+echo ""
+touch FP.$$.$rgb_map
+set slice = 1
+echo Making RGB map $rgb_map...
+echo Making RGB map $rgb_map... >> fidap.log
+
+# First make floating point RGB cluster map.
+@ bytes_per_slice = $xdim * $ydim * 4
+echo -n "  Slice #"
+while ($slice <= $zdim)
+    echo -n " $slice"
+    @ num_bytes2skip = ($slice - 1) * $bytes_per_slice
+    excise2 Rproportion.img FP.$$.$rgb_map $num_bytes2skip $bytes_per_slice
+    excise2 Gproportion.img FP.$$.$rgb_map $num_bytes2skip $bytes_per_slice
+    excise2 Bproportion.img FP.$$.$rgb_map $num_bytes2skip $bytes_per_slice
+    @ slice ++
+end
+echo ""
+rm Gproportion.img Rproportion.img Bproportion.img
+
+
+# Convert floating point RGB clusters to 24-bit format.
+fp2byte FP.$$.$rgb_map BFP.$$.$rgb_map >> /dev/null
+rm FP.$$.$rgb_map
+
+# Finally, overlay 24-bit clusters over base scan.
+echo ""
+if ($base_scan_type == 1) then
+    echo overlay24bitON8bit $base_scan:r.hdr $base_scan BFP.$$.$rgb_map $rgb_map
+    echo overlay24bitON8bit $base_scan:r.hdr $base_scan BFP.$$.$rgb_map $rgb_map >> fidap.log
+    overlay24bitON8bit $base_scan:r.hdr $base_scan BFP.$$.$rgb_map $rgb_map
+else
+    echo overlay24bitON16bit $base_scan:r.hdr $base_scan BFP.$$.$rgb_map $rgb_map
+    echo overlay24bitON16bit $base_scan:r.hdr $base_scan BFP.$$.$rgb_map $rgb_map >> fidap.log
+    overlay24bitON16bit $base_scan:r.hdr $base_scan BFP.$$.$rgb_map $rgb_map
+endif
+makeheader4 $rgb_map:r.hdr $dims 3 24 255 0 255 0 128 1
+#makeheader4 BFP.$$.$rgb_map:r.hdr $dims 3 24 255 0 255 0 128 1
+#rm BFP.$$.$rgb_map
+
+echo make_triangle_palette 128 128 15 22 115 22 66 108 $background \
+						triangle.img $rgb_scaling
+echo make_triangle_palette 128 128 15 22 115 22 66 108 $background \
+						triangle.img $rgb_scaling >> fidap.log
+make_triangle_palette 128 128 15 22 115 22 66 108 $background \
+				triangle.img $rgb_scaling | grep writing
+makeheader4 triangle.hdr 128 128 1 1 1 1 1 24 255 0 255 0 128 1
+echo ""
+echo A large 24-bit temporary file named BFP.$$.$rgb_map has been created.
+echo If you have no use for this file, consider deleting it.

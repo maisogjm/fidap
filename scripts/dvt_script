@@ -1,0 +1,120 @@
+#! /bin/csh -f
+# dvt_script
+# 10.09.96 by Jose' Ma. Maisog, M.D.
+# Laboratory of Psychology and Psychopathology,
+# National Institute of Mental Health
+
+#
+# Shell script to display time series of 16-bit image volumes.
+
+# C executables called: dvt, dvt16, dvt25, get_dims_from
+
+# QUERY USER FOR IMAGE DIRECTORY
+scroll 10
+echo  ""
+echo '******************************************************'
+echo  ""
+echo Note: This script calls C executables written by Allen W. Song,
+echo modified from source code by Andre Jesmanowicz.
+echo ""
+echo This script will display the time series of a set of 16-bit image
+echo volumes.
+echo ""
+#touch fidap.log
+#echo '******************************************************' >> fidap.log
+#echo `date` " : " $user " : " dvt_script >> fidap.log
+
+
+# QUERY USER FOR NAME OF INPUT TEXT FILE
+echo  ""
+echo '******************************************************'
+echo  ""
+echo To run this script, you must first make a text file.
+echo This file should contain the names of the image volumes, one per line.
+echo ""
+echo ""
+echo -n "Type in name of text file: "
+set textfile = $<
+while (! -e $textfile)
+    echo $textfile does not exist.
+    echo ""
+    echo -n "Type in name of text file: "
+    set textfile = $<
+end
+set firstfile = `head -1 $textfile`
+set hdrfile = $firstfile:r.hdr
+set dims = `get_dims_from $hdrfile`
+
+
+# QUERY USER FOR NUMBER OF GRAY LEVELS
+echo  ""
+echo '******************************************************'
+echo  ""
+echo Type in the number of gray levels desired.
+echo Default is 80.  You may need to reduce this number,
+echo close Web browsers, or use xsetroot to set the desktop
+echo display to some solid color.
+echo ""
+echo -n "Number of gray levels desired {80}? "
+set ngl = $<
+if ( $ngl == "" ) then
+    set ngl = 80
+endif
+
+
+# QUERY USER FOR LINE THICKNESS
+echo  ""
+echo '******************************************************'
+echo  ""
+echo Type in desired thickness for the fMRI time course plots.
+echo Default is 1.  You may want to increase this number,
+echo if the lines are too thin for making slides.  Recommend
+echo not using a thickness greater than 3.
+echo ""
+set point = $<
+if ( $point == "" ) then
+    set point = 1
+endif
+
+
+# SHOW USER DIRECTIONS
+echo  ""
+echo '******************************************************'
+echo  ""
+echo DIRECTIONS FOR USAGE:
+if ($dims[3] < 17) then
+    dvt16
+else if ($dims[3] <25) then
+    dvt25
+else
+    dvt
+endif
+echo ""
+echo ""
+echo Press Return to continue...
+set dummy = $<
+
+
+# CALL dvt, dvt16, or dvt25:
+echo  ""
+echo '******************************************************'
+echo  ""
+
+# Set number of colors.
+#if ($DISPLAY != ":0.0" ) then
+#    set num_colors = "-ngl 40"
+#else
+#    set num_colors
+#endif
+
+if ($dims[3] < 17) then
+    echo dvt16 -point $point -ngl $ngl $num_colors \`cat $textfile\`
+    dvt16 -point $point -ngl $ngl $num_colors `cat $textfile`
+else if ($dims[3] <25) then
+    echo dvt25 -point $point -ngl $ngl $num_colors \`cat $textfile\`
+    dvt25 -point $point -ngl $ngl $num_colors `cat $textfile`
+else
+    echo dvt -point $point -ngl $ngl $num_colors \`cat $textfile\`
+    dvt -point $point -ngl $ngl $num_colors `cat $textfile`
+endif
+exit

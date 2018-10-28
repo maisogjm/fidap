@@ -1,0 +1,4 @@
+make_mac_header: make_mac_header.o
+	$(CC) $(EXTRAS) make_mac_header.o -o make_mac_header
+make_mac_header.o: make_mac_header.c
+	$(CC) $(EXTRAS) -c make_mac_header.c

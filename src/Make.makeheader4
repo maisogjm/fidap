@@ -1,0 +1,4 @@
+makeheader4: makeheader4.o
+	$(CC) $(EXTRAS) makeheader4.o -o makeheader4
+makeheader4.o: makeheader4.c
+	$(CC) $(EXTRAS) -c makeheader4.c

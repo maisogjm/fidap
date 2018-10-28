@@ -1,0 +1,4 @@
+makemaskBGT2: makemaskBGT2.o
+	$(CC) $(EXTRAS) makemaskBGT2.o -o makemaskBGT2
+makemaskBGT2.o: makemaskBGT2.c
+	$(CC) $(EXTRAS) -c makemaskBGT2.c

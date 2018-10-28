@@ -1,0 +1,14 @@
+Dmultivar_multiple_regressionB: Dmultivar_multiple_regressionB.o imgio.o nrutil.o \
+	Dlubksb.o Dludcmp.o
+	$(CC) $(EXTRAS) Dmultivar_multiple_regressionB.o imgio.o nrutil.o Dlubksb.o \
+	Dludcmp.o -o Dmultivar_multiple_regressionB -lm
+Dmultivar_multiple_regressionB.o: Dmultivar_multiple_regressionB.c
+	$(CC) $(EXTRAS) -c Dmultivar_multiple_regressionB.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c
+nrutil.o: nrutil.c
+	$(CC) $(EXTRAS) -c nrutil.c
+Dlubksb.o: Dlubksb.c
+	$(CC) $(EXTRAS) -c Dlubksb.c
+Dludcmp.o: Dludcmp.c
+	$(CC) $(EXTRAS) -c Dludcmp.c

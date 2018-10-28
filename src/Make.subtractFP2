@@ -1,0 +1,5 @@
+subtractFP2: subtractFP2.o
+	$(CC) $(EXTRAS) subtractFP2.o -o subtractFP2
+subtractFP2.o: subtractFP2.c
+	$(CC) $(EXTRAS) -c subtractFP2.c
+

@@ -1,0 +1,6 @@
+F2Z: F2Z.o imgio.o
+	$(CC) $(EXTRAS) F2Z.o imgio.o -o F2Z -lm
+F2Z.o: F2Z.c
+	$(CC) -c F2Z.c
+imgio.o: imgio.c
+	$(CC) -c imgio.c

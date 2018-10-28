@@ -1,0 +1,4 @@
+mean: mean.o
+	$(CC) $(EXTRAS) mean.o -o mean
+mean.o: mean.c
+	$(CC) $(EXTRAS) -c mean.c

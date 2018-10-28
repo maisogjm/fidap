@@ -1,0 +1,4 @@
+excise: excise.o
+	$(CC) $(EXTRAS) excise.o -o excise
+excise.o: excise.c
+	$(CC) $(EXTRAS) -c excise.c

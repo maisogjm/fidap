@@ -1,0 +1,4 @@
+log10: log10.o
+	$(CC) $(EXTRAS) log10.o -o log10 -lm
+log10.o: log10.c
+	$(CC) $(EXTRAS) -c log10.c

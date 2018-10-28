@@ -1,0 +1,4 @@
+multB1: multB1.o
+	$(CC) $(EXTRAS) multB1.o -o multB1
+multB1.o: multB1.c
+	$(CC) $(EXTRAS) -c multB1.c

@@ -1,0 +1,54 @@
+#!/bin/csh -f
+# fidap
+# 10.30.96 by Jose' Ma. Maisog, M.D.
+# Laboratory of Brain and Cognition,
+# National Institute of Mental Health
+
+# Calls the script menu_driver, either in interactive mode,
+# or from an automated script file.  If from a script file,
+# the job can be run either immediately, or at some future
+# time via the "at" queue.
+#
+# See textfiles convolve3D_template.txt, lag_and_disp_template.txt,
+# and mult_regress_template.txt for examples of automated fidap
+# script files.  Pound signs "#" are comments.  Note that blank
+# lines without pound signs will be interpreted as carriage
+# returns, so don't include any blank lines unless you really mean
+# to have a carriage return.  A proper final entry in the
+# automated script file will allow the job to exit the menu driver
+# gracefully.
+#
+
+##################################################################
+# If there are any command line arguments, check existence
+# of automated script file.
+if ($#argv > 0) then
+    if (! -e $argv[1]) then
+        echo File $argv[1] does not exist.
+        exit
+    endif
+endif
+
+##################################################################
+# An automated script file has been specified, but no time was
+# given, so the script is to be run immediately.  Strip comments
+# out using sed, then pipe output to the menu driver.
+if ($#argv == 1) then
+    cat $argv[1] | sed "/^#/ d" | menu_driver
+
+##################################################################
+# An automated script file and a time to run it was given.
+# At that time, recursively invoke this script (fidap), but with
+# only one command line argument, the script file.  Cool, no?
+else if ($#argv >= 2 ) then
+    echo Will run fidap script $argv[1] at $argv[2-$#argv]
+    at -c $argv[2-$#argv] << EOF
+fidap $argv[1]
+EOF
+
+##################################################################
+# No command line arguments were given.
+# Run the menu driver in interactive mode.
+else
+    menu_driver
+endif

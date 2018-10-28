@@ -1,0 +1,3 @@
+#!/bin/csh -f
+set plot_y_gnu = `which plot_Y.gnu`
+gnuplot $plot_y_gnu

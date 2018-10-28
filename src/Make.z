@@ -1,0 +1,8 @@
+z: z.o golden.o nrutil.o
+	$(CC) $(EXTRAS) z.o golden.o nrutil.o -o z -lm
+z.o: z.c
+	$(CC) $(EXTRAS) -c z.c
+golden.o: golden.c
+	$(CC) $(EXTRAS) -c golden.c
+nrutil.o: nrutil.c
+	$(CC) $(EXTRAS) -c nrutil.c

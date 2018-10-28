@@ -1,0 +1,181 @@
+#! /bin/csh -f
+# INSTALL_NIH_FIDAP 
+# 07.22.96 by Jose' Ma. Maisog, M.D.
+# Laboratory of Psychology and Psychopathology,
+# National Institute of Mental Health
+
+#
+# Shell script to install NIH fidap.
+# First, prompts user for name of an ANSI C compiler, plus
+# any desired optional compilation switches.
+# Then, prompts user for name of directory into which NIH
+# fidap shall be placed.  Then, copies contents of scripts
+# directory into the desination directory.
+#
+# Then, performs shell loop over cleverly named Makefiles,
+# and copies the resultant executables to the destination
+# directory.
+
+unalias cd
+unalias cp
+unalias rm
+
+echo '************************************************************'
+echo You must type in the name of the ANSI C compiler.  On the
+echo SPARCstation running SunOS 4.1.3, this was a compiler named
+echo \"acc\", but under Solaris 2.X it may be \"cc\".  gcc seems
+echo to work well.  Check with your system administrator if you\'re
+echo not sure.
+echo ""
+echo ""
+echo -n "--> Name of ANSI C compiler? "
+setenv CC $<
+echo ""
+echo '************************************************************'
+echo In addition to the \"-lm\" flag needed to include the math
+echo library, you may wish to include other switches on the
+echo compilation line.  For example, with gcc, there is a flag
+echo \"-O3\" to optimize the compiled code.  E.g., if you want
+echo the compilation command to be
+echo ""
+echo "    cc -lextra1 -lextra2 example.c -o example -lm"
+echo ""
+echo then two extra switches, \"-lextra1\" and \"-lextra2\",
+echo are needed in addition to the usual \"-lm\" flag.
+echo ""
+echo Here you will need to type any of these extra switches,
+echo including the hyphens, separated by spaces. E.g., for the
+echo above example you would type in the following:
+echo ""
+echo -lextra1 -lextra2
+echo ""
+echo If no extra switches are needed, just type a carriage return.
+echo ""
+echo ""
+echo -n "--> Extra compilation switches? "
+setenv EXTRAS $<
+echo ""
+echo '************************************************************'
+echo Now you must type in the name of the directory into which
+echo executables will be placed.  If this directory does not
+echo already exist, this script will attempt to create it.
+echo You must have write access to this directory, otherwise
+echo this script will not be able to transfer executables to it.
+echo ""
+echo Pathname can be either absolute or relative to current
+echo directory.
+echo ""
+echo ""
+echo -n "--> Directory? "
+set dir = $<
+if ( ! -d $dir ) then
+    echo Creating $dir...
+    mkdir $dir
+    if ( $status == '1') then
+        echo '   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+        echo '   ======>>>' Unable to create $dir.
+        echo '   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+        echo This may be a permissions problem.
+        echo Cannot proceed with installation.
+        echo ""
+        exit
+    endif
+endif
+echo ""
+echo ""
+
+# Copy scripts into destination directory.
+echo '************************************************************'
+echo Now copying scripts into $dir...
+echo cp scripts/\* $dir
+\cp scripts/* $dir
+echo ""
+echo ""
+
+echo '************************************************************'
+echo Now compiling C code...
+echo cd src
+cd src
+\rm *.o >>& /dev/null
+echo ""
+echo ""
+
+# Loop over makefiles to compile NIH fidap code.
+set make_list = `ls Make.*`
+set number = $#make_list
+set index = 1
+foreach file( $make_list )
+    echo '******************************'
+    echo Compilation \# ${index} of ${number}: Compiling $file:e...
+
+    # Run make on makefile.
+    echo ""
+    echo \(1\) make -f $file
+    make -f $file
+    if ($status != 1) then
+
+        # Strip executable.
+        echo \(2\) strip $file:e
+        strip $file:e
+
+        # Copy stripped executable to destination directory
+        cd ..
+        echo \(3\) cp src/$file:e $dir
+        \cp src/$file:e $dir
+        set copy_status = $status
+        cd src
+
+        # Delete local copy of executable if copy was successful.
+        if ($copy_status != 1) then
+            \rm $file:e
+        else
+            echo '   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+            echo '   ======>>>' Unable to copy $file:e to $dir.
+            echo '   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+            echo This may be a permissions problem, or perhaps
+            echo $dir is full.  Executable $file:e will remain in
+            echo the src directory.  Will proceed with compilation.
+            echo ""
+        endif
+    else
+        echo '   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+        echo '   ======>>>' UNABLE TO MAKE $file:e \!
+        echo '   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+        echo ""
+        echo Press return to continue...
+        set dummy = $<
+    endif
+    echo ""
+    @ index ++
+end
+
+echo '******************************'
+echo ""
+echo Deleting object files...
+rm *.o
+echo ""
+
+echo '******************************'
+echo ""
+echo All done\!\!
+echo ""
+echo There are TWO more things to do for the accounts of each
+echo NIH fidap user.
+echo ""
+echo \(1\) Most importantly, add the directory $dir
+echo to the searchpath in the .cshrc or .login file, e.g.,
+echo ""
+echo "    " set path = \($dir \$path\)
+echo ""
+echo \(2\) If you have MATLAB and want to use the MATLAB
+echo scripts included with NIH fidap, add the directory
+echo $dir to the MATLAB searchpath in
+echo the .cshrc or .login file, e.g.,
+echo ""
+echo "    " setenv MATLABPATH $dir
+echo ""
+echo if MATLABPATH is not defined yet, or
+echo ""
+echo "    " setenv MATLABPATH  $dir\:\$MATLABPATH
+echo ""
+echo if MATLABPATH is already defined.

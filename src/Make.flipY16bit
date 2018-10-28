@@ -1,0 +1,4 @@
+flipY16bit: flipY16bit.o
+	$(CC) $(EXTRAS) flipY16bit.o -o flipY16bit
+flipY16bit.o: flipY16bit.c
+	$(CC) $(EXTRAS) -c flipY16bit.c

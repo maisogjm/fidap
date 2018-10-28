@@ -1,0 +1,6 @@
+center_gravity: center_gravity.o imgio.o
+	$(CC) $(EXTRAS) center_gravity.o imgio.o -o center_gravity -lm
+center_gravity.o: center_gravity.c
+	$(CC) $(EXTRAS) -c center_gravity.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

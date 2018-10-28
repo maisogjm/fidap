@@ -1,0 +1,6 @@
+fmri_df: fmri_df.o imgio.o
+	$(CC) $(EXTRAS) fmri_df.o imgio.o -o fmri_df -lm
+fmri_df.o: fmri_df.c
+	$(CC) $(EXTRAS) -c fmri_df.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

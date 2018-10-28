@@ -1,0 +1,6 @@
+overlay24bitON16bit: overlay24bitON16bit.o imgio.o
+	$(CC) $(EXTRAS) overlay24bitON16bit.o imgio.o -o overlay24bitON16bit -lm
+overlay24bitON16bit.o: overlay24bitON16bit.c
+	$(CC) $(EXTRAS) -c overlay24bitON16bit.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

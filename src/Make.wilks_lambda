@@ -1,0 +1,15 @@
+wilks_lambda: wilks_lambda.o golden.o betai.o nrutil.o gammln.o betacf.o
+	$(CC) $(EXTRAS) wilks_lambda.o golden.o betai.o nrutil.o gammln.o betacf.o \
+				-o wilks_lambda -lm
+wilks_lambda.o: wilks_lambda.c
+	$(CC) $(EXTRAS) -c wilks_lambda.c
+golden.o: golden.c
+	$(CC) $(EXTRAS) -c golden.c
+betai.o: betai.c
+	$(CC) $(EXTRAS) -c betai.c
+nrutil.o: nrutil.c
+	$(CC) $(EXTRAS) -c nrutil.c
+gammln.o: gammln.c
+	$(CC) $(EXTRAS) -c gammln.c
+betacf.o: betacf.c
+	$(CC) $(EXTRAS) -c betacf.c

@@ -1,0 +1,9 @@
+doimgsampfp: doimgsampfp.o imgsampfp.o imgio.o
+	$(CC) $(EXTRAS) doimgsampfp.o imgsampfp.o imgio.o \
+			-o doimgsampfp
+doimgsampfp.o: doimgsampfp.c
+	$(CC) $(EXTRAS) -c doimgsampfp.c
+imgsampfp.o: imgsampfp.c
+	$(CC) $(EXTRAS) -c imgsampfp.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

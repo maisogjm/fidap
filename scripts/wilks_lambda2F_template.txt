@@ -1,0 +1,64 @@
+####################################################################
+# Template input textfile for converting Wilks' Lambda maps to
+# F-test and Z-score maps.
+# You will need to modify this file to run on your own particular
+# data set.  Pound signs  "#" are comments.  Note that blank
+# lines without pound signs will be interpreted as carriage returns,
+# so don't include any blank lines unless you really mean to have
+# a carriage return.
+#
+####################################################################
+# Select Statistical Conversions and Correcting for Multiple Comparisons Menu
+4
+####################################################################
+# Select Convert Wilks' Lambda map to F-test and Z-score maps
+5
+####################################################################
+# Here type in the name of the output directory.
+# If this is the current directory, you can use a "."
+# You can use absolute pathnames, e.g., /u4/data6/mri/raw_data
+.
+####################################################################
+# Name of Wilks' Lambda map
+# In this example, we give an absolute pathname.
+wilks_lambda_int_p1vH1vE43.img
+####################################################################
+# nu-H.  This is the number which appears after the "vH" in
+# the Wilks' Lambda map filename.
+1
+####################################################################
+# nu-E.  This is the number which appears after the "vE" in
+# the Wilks' Lambda map filename.
+43
+####################################################################
+# Estimated effective number of degrees of freedom.
+# This is the number which appears in the df.dat file, contained
+# in the subdirectories voxel_*, created after running multiple
+# regression.
+14
+####################################################################
+# Scalefactor.  This is the effective df dividing by nu-E.
+# 14/43=0.325581
+0.325581
+####################################################################
+# Regression coefficient map corresponding to the Wilks' Lambda
+# map being converted to F-test and Z-score maps.
+# You are asked for this only if nu-H is equal to 1, as it is in
+# this case.  Since there is only one effect of interest, the
+# Wilks' Lambda map testing the entire model of effects of interest
+# is the same as the Wilks' Lambda map testing the single effect of
+# interest, wilks_lambda_5_p1vH1vE43.img, whose corresponding
+# regression coefficient map is B_hat_5_col1.img.
+# If nu-H is NOT equal to 1, delete the following word, replacing
+# it with a blank line to handle the prompt asking for a carriage
+# return in that case.
+B_hat_5_col1.img
+####################################################################
+# After the conversion is finished, you will be left at
+# the Statistical Conversions, and Correcting For Multiple Comparisons
+# Menu of fidap.  The following "9" exits gracefully from fidap.
+# Of course, you can have fidap do other procedures at this point.
+# For example, to return to the Main Menu, and then go into the menu
+# for Post-processing Utilities, you'd have a "8" and a "5"
+# (on separate lines) instead of a "9".
+9

@@ -1,0 +1,21 @@
+blobs_nocorners: blobs_nocorners.o imgio.o erffc.o gammp.o gammq.o gser.o gcf.o nrutil.o gammln.o
+	$(CC) $(EXTRAS) blobs_nocorners.o imgio.o erffc.o gammp.o gammq.o gser.o gcf.o\
+				nrutil.o gammln.o -o blobs_nocorners -lm
+blobs_nocorners.o: blobs_nocorners.c
+	$(CC) $(EXTRAS) -c blobs_nocorners.c
+imgio.o: imgio.c analyze6.h
+	$(CC) $(EXTRAS) -c imgio.c
+erffc.o: erffc.c
+	$(CC) $(EXTRAS) -c erffc.c
+gammp.o: gammp.c
+	$(CC) $(EXTRAS) -c gammp.c
+gammq.o: gammq.c
+	$(CC) $(EXTRAS) -c gammq.c
+gser.o: gser.c
+	$(CC) $(EXTRAS) -c gser.c
+gcf.o: gcf.c
+	$(CC) $(EXTRAS) -c gcf.c
+nrutil.o: nrutil.c
+	$(CC) $(EXTRAS) -c nrutil.c
+gammln.o: gammln.c
+	$(CC) $(EXTRAS) -c gammln.c

@@ -1,0 +1,16 @@
+chi2: chi2.o gammq.o nrutil.o gcf.o gser.o gammln.o golden.o
+	$(CC) $(EXTRAS) chi2.o gammq.o nrutil.o  gcf.o gser.o gammln.o golden.o -o chi2 -lm
+chi2.o: chi2.c
+	$(CC) $(EXTRAS) -c chi2.c
+golden.o: golden.c
+	$(CC) $(EXTRAS) -c golden.c
+gammq.o: gammq.c
+	$(CC) $(EXTRAS) -c gammq.c
+gammln.o: gammln.c
+	$(CC) $(EXTRAS) -c gammln.c
+gcf.o: gcf.c
+	$(CC) $(EXTRAS) -c gcf.c
+gser.o: gser.c
+	$(CC) $(EXTRAS) -c gser.c
+nrutil.o: nrutil.c
+	$(CC) $(EXTRAS) -c nrutil.c

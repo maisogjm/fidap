@@ -1,0 +1,4 @@
+clustermean: clustermean.o imgio.o
+	$(CC) $(EXTRAS) clustermean.o imgio.o -o clustermean
+clustermean.o: clustermean.c
+	$(CC) $(EXTRAS) -c clustermean.c

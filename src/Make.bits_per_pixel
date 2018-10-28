@@ -1,0 +1,6 @@
+bits_per_pixel: bits_per_pixel.o imgio.o
+	$(CC) $(EXTRAS) bits_per_pixel.o imgio.o -o bits_per_pixel
+bits_per_pixel.o: bits_per_pixel.c
+	$(CC) $(EXTRAS) -c bits_per_pixel.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

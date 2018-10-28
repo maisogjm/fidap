@@ -1,0 +1,7 @@
+softmean16bitB: softmean16bitB.o imgio.o
+	$(CC) softmean16bitB.o imgio.o -o softmean16bitB -lm $(EXTRAS)
+softmean16bitB.o: softmean16bitB.c
+	$(CC) -c softmean16bitB.c
+imgio.o: imgio.c
+	$(CC) -c imgio.c
+

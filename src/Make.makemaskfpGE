@@ -1,0 +1,4 @@
+makemaskfpGE: makemaskfpGE.o
+	$(CC) $(EXTRAS) makemaskfpGE.o -o makemaskfpGE
+makemaskfpGE.o: makemaskfpGE.c
+	$(CC) $(EXTRAS) -c makemaskfpGE.c

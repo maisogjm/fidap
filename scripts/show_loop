@@ -1,0 +1,12 @@
+#!/bin/csh -f
+# Script to be run in the output directory of a multiple regression analysis
+# in which there was at least one voxel of interest.  Plots fMRI time series
+# for each voxel of interest.
+foreach dir ( `ls -d voxel_* | grep -v dat | grep -v txt` )
+    cd $dir
+    echo Showing fMRI time series for $dir
+    plot_Y
+    echo ""
+    echo ""
+    cd ..
+end

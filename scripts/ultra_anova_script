@@ -1,0 +1,417 @@
+#! /bin/csh -f
+# ultra_anova_script
+# 03.07.94 by Jose' Ma. Maisog, M.D.
+# Laboratory of Psychology and Psychopathology,
+# National Institute of Mental Health
+
+#
+# Shell script to perform an ANOVA on 16-bit ANALYZE images.
+
+# C executables called: ultra_anova, maxfp, minfp, fp2byte, makeheader4
+
+
+# QUERY USER FOR IMAGE DIRECTORY
+scroll 10
+echo  ""
+echo '******************************************************'
+echo  ""
+echo ""
+echo This script will perform an N_WAY ANOVA on a group of 16-bit ANALYZE
+echo images.  The images must all be located in the same directory, and
+echo there must be at least one ANALYZE header .hdr file which contains
+echo the appropriate image dimension information.  You must have read/write
+echo access to the directory in which the images are kept.
+echo ""
+echo -n "Please enter directory in which 16-bit ANALYZE images are kept: "
+set dir = $<
+while (! -d $dir)
+    echo Directory $dir does not exist.
+    echo ""
+    echo -n "Please enter directory in which 16-bit ANALYZE images are kept: "
+    set dir = $<
+end
+cd $dir
+touch fidap.log
+echo '******************************************************' >> fidap.log
+echo `date` " : " $user " : " ultra_anova_script >> fidap.log
+
+
+# SHOW USER CONTENTS OF IMAGE DIRECTORY
+echo  ""
+echo '******************************************************'
+echo  ""
+set filelist = `\ls *.img`
+set numANLZfiles = $#filelist
+echo There are $numANLZfiles ANALYZE images in ${dir}:
+\ls *.img
+echo ""
+echo -n Press Return to continue...
+set dummy = $<
+if ($numANLZfiles == "0") then
+    exit
+endif
+
+
+# QUERY USER FOR NAME OF INPUT TEXT FILE, IF IT ALREADY EXISTS
+echo  ""
+echo '******************************************************'
+echo  ""
+echo This script will perform an ANOVA on a group of 16-bit ANALYZE images.
+echo ""
+echo To run this script, you must first make a text file.
+echo ""
+echo This file should contain the names of the images.  Following each
+echo name you must place a number which will be used to weight the
+echo global mean intensities of the images when ratio-adjusting the
+echo "images' global means (eg, '1')."
+echo""
+set example = `which anova.txt`
+echo For an example, see the file $example
+echo ""
+echo In this example, there were three factors: condition, series, and
+echo "block.  The condition factor had 2 levels (on and off), the"
+echo "series factor had 3 levels (1, 2, and 3), and the block factor had"
+echo "2 levels (1 and 2).  Each cell had 4 observations, A, B, C, and D."
+echo If this text file doesn\'t yet exist, you can create it using a text editor
+echo \(eg, vi, emacs, or ez\), or you can create it via this script.
+echo ""
+echo CHOICES:
+echo "  (1) The text file is already made."
+echo "      Continue with this script."
+echo "  (2) Make the text file now, using either"
+echo "      vi, emacs, or ez."
+echo "  (3) Create the text file by directly typing"
+echo "      in the filenames via this script."
+echo "  (4) Exit this script, and make the text file"
+echo "      (using, eg,  vi, emacs, or ez).  After it is"
+echo "      created you must return to this script."
+echo ""
+echo -n " CHOOSE ACTION: "
+set choice = $<
+while ($choice != "1" && $choice != "2" && $choice != "3" && $choice != "4")
+    echo -n " CHOOSE ACTION: "
+    set choice = $<
+end
+
+
+switch ($choice)
+    # FILE ALREADY MADE.
+    case 1:
+    echo ""
+    echo -n "Type in name of text file: "
+    set textfile = $<
+    while (! -e $textfile)
+	echo $textfile does not exist.
+	echo ""
+	echo -n "Type in name of text file: "
+	set textfile = $<
+    end
+
+    echo ""
+    breaksw
+
+    # MAKE THE TEXT FILE VIA THIS SCRIPT
+    case 2:
+    echo ""
+    echo -n "Type in desired name for text file: "
+    set textfile = $<
+    echo ""
+    echo -n "Type in desired editor (eg, "vi" or "emacs"): "
+    set editor = $<
+    echo ""
+    echo ""
+    echo Now entering the editor $editor, creating file $textfile.
+    echo This file should contain the names of the images.  Following each
+    echo name you must place a number which will be used to weight the
+    echo global mean intensities of the images when ratio-adjusting the
+    echo "images' global means (eg, '1')."
+    echo -n Type Return when ready...
+    set dummy = $<
+    echo ""
+    eval `echo $editor $textfile`
+    echo ""
+    echo ""
+    breaksw
+
+    # MAKE THE TEXT FILE VIA THIS SCRIPT
+    case 3:
+    echo ""
+    echo -n "Type in desired name for text file: "
+    set textfile = $<
+    echo ""
+    echo I shall now create the file $textfile.  You must now type in the names
+    echo of the images.  Following each name you must place a number which will
+    echo be used to weight the global mean intensities of the images when
+    echo "ratio-adjusting the images' global means (eg, '1').  After the last"
+    echo carriage return, type a \<Control-D\>.
+    echo ""
+    cat > $textfile
+    breaksw
+
+    # EXIT SCRIPT, MAKE THE TEXT FILE, AND THEN RETURN TO THIS SCRIPT.
+    case 4:
+    echo You have chosen to exit this script.  You must now create the text file.
+    echo This file should contain the names of the images.  Following each
+    echo name you must place a number which will be used to weight the
+    echo global mean intensities of the images when ratio-adjusting the
+    echo "images' global means (eg, '1')."
+    echo Then re-run this script.
+    echo -n Type Return when ready...
+    set dummy = $<
+    exit
+    breaksw
+
+endsw
+echo Input text file will be $textfile >> fidap.log
+
+# QUERY USER FOR NAME OF ANALYZE .hdr FILE
+echo  ""
+echo '******************************************************'
+echo  ""
+echo Here are the ANALYZE header files in ${dir}:
+\ls *.hdr
+echo ""
+echo "Please enter the name of one of these ANALYZE header"
+echo "files which has the correct image dimensions for your"
+echo -n "images (including .hdr extension): "
+set hdrfile = $<
+while (! -e $hdrfile)
+    echo $hdrfile does not exist.
+    echo ""
+    echo -n "Type in name of header file file: "
+    set hdrfile = $<
+end
+set dims = `get_dims_from $hdrfile`
+@ num_vox = $dims[1] * $dims[2] * $dims[3]
+echo ""
+echo Header file will be $hdrfile >> fidap.log
+echo Image volumes have dimensions $dims[1] x $dims[2] x $dims[3]
+echo Image volumes have total of $num_vox voxels each.
+
+
+# QUERY USER FOR EXPERIMENTAL DESIGN
+echo  ""
+echo '******************************************************'
+echo  ""
+echo You must now indicate the design of your experiment.
+echo ""
+echo -n "How many factors does your experiment have? "
+set num_fact = $<
+echo Number of factors is $num_fact >> fidap.log
+set num_lvls_in_fact
+set fact_index=1
+while ($fact_index <= $num_fact)
+    echo -n "  How many levels does factor #$fact_index have? "
+    set num_lvls_in_fact = ($num_lvls_in_fact $<)
+    echo Factor #$fact_index has $num_lvls_in_fact[$fact_index] >> fidap.log
+    @ fact_index ++
+end
+
+
+# QUERY USER FOR NAME OF MASK IMAGE
+echo  ""
+echo '******************************************************'
+echo  ""
+echo You must now enter the name of the 8-bit mask image file.
+echo This 8-bit mask will determine brain versus non-brain.
+echo A value of 1 indicates brain, a value of 0 indicates non-brain.
+echo Obviously, calculations will be done only on indicated brain voxels.
+echo ""
+echo -n "ENTER the name of the maskfile (including .img extension): "
+set maskfile = $<
+while (! -e $maskfile)
+    echo $maskfile does not exist.
+    echo ""
+    echo -n "ENTER the name of the maskfile (including .img extension): "
+    set maskfile = $<
+end
+echo ""
+echo $maskfile will be used as the maskfile.
+echo $maskfile will be used as the maskfile. >> fidap.log
+echo ""
+
+
+# QUERY USER FOR PROBABILITY THRESHOLD
+echo  ""
+echo '******************************************************'
+echo  ""
+echo In the lower left corner of the probability images, an
+echo indicator square of a user-specified intensity level
+echo will be placed.
+echo ""
+echo -n "Please enter probability threshold (e.g., 0.05): "
+set prob_thresh = $<
+echo Probability threshold for indicator square will be $prob_thresh >> fidap.log
+
+
+# INFORMATION ABOUT OUTPUT IMAGE FILES
+echo  ""
+echo '******************************************************'
+echo  ""
+echo Floating point F images will be generated\; they will have
+echo names like F01_v1_v2.img, where \'01\' indicates the
+echo interaction or factor, and v1 and v2 are the degrees of
+echo freedom of the numerator and denominator.
+echo ""
+echo Floating point probability images will also be generated.
+echo These are generated by converting the F test and its degrees
+echo of freedom to a probability\; then the negative log base 10
+echo of that probability is calculated and output as an image
+echo \(much like calculating pH for measuring acidity\).
+echo Thus, a probability of 10 \^ \-25 gets mapped to a value of
+echo +25.  Probability images will be named the same way as F
+echo images, only they begin with a \'pF\' rather than a \'F\'.
+echo ""
+echo 8-bit versions of these floating point images will be
+echo generated\; you can tell that an image is 8-bit because
+echo it\'s name will begin with a \'B\' \(for \'B\'yte\).
+
+
+# QUERY USER FOR COORDINATES OF VOXEL OF INTEREST
+echo  ""
+echo '******************************************************'
+echo  ""
+echo In addition to the F images and the probability images,
+echo a text file containing the ANOVA for one voxel in the
+echo image will be generated.  It will have a name like
+echo \"anova_X_Y_Z.txt,\" where XYZ are the xyz coordinates
+echo of the voxel of interest.
+echo ""
+echo -n "  X-coordinate of voxel of interest: "
+set x_int = $<
+echo -n "  Y-coordinate of voxel of interest: "
+set y_int = $<
+echo -n "  Z-coordinate of voxel of interest: "
+set z_int = $<
+@ vox_index_int = ((($z_int - 1) * $dims[2]) + $y_int - 1) * $dims[1] + $x_int - 1
+while (($vox_index_int < 0) || ($vox_index_int > $num_vox - 1))
+    echo Bad coordinates, given image dimensions in $hdrfile.
+    echo ""
+    echo -n "  X-coordinate of voxel of interest: "
+    set x_int = $<
+    echo -n "  Y-coordinate of voxel of interest: "
+    set y_int = $<
+    echo -n "  Z-coordinate of voxel of interest: "
+    set z_int = $<
+    @ vox_index_int = ((($z_int - 1) * $dims[2]) + $y_int - 1) * $dims[1] + $x_int - 1
+end
+echo ""
+echo The output text file will be written to anova_${x_int}_${y_int}_$z_int.txt
+echo The output text file will be written to anova_${x_int}_${y_int}_$z_int.txt >> fidap.log
+
+
+# QUERY USER WHETHER A SCALED 16-BIT IMAGE IS DESIRED
+echo  ""
+echo '******************************************************'
+echo  ""
+echo If you wish, scaled 16-bit versions of the floating point
+echo images can be generated.  These 16-bit images will be
+echo scaled by a factor of 1000.  Thus, an F of 1.672 will have
+echo a 16-bit value of 1672.  This can be useful if you are doing
+echo pixel sampling within ANALYZE.  The drawback is that 16-bit
+echo images are fairly large.  16-bit images have names that
+echo begin with a \'W\' \(for \'W\'ord\).
+echo ""
+echo -n "Do you want scaled 16-bit images <y/n>? "
+set scaled_imgs = $<
+
+
+echo ""
+echo '******************************************************'
+echo ""
+echo Finally, you must type in a number between 0 and 19.
+echo The \'nice\' command will use this number to adjust
+echo the priority of this process.  \'0\' will result in
+echo the default priority being used.  Higher numbers will
+echo result in lower priorities.  We recommend \'0\' to be
+echo used during off hours, and higher \(nicer\) numbers to
+echo be used during regular work hours.
+echo ""
+echo -n "Priority adjustment number? "
+set priority = $<
+if ($priority == "") then
+    set priority = 0
+endif
+echo $priority >> fidap.log
+
+
+# CHECK WITH USER IF IT'S OKAY TO GO ON
+echo ""
+echo -n "Continue <y/n>? "
+set choice = $<
+if ($choice != "y") then
+    echo QUITTING SHELL SCRIPT....
+    sleep 2
+    exit
+endif
+
+
+# MAKE TEMPORARY TEXT FILE TO ANSWER ultra_anova PROMPTS
+
+    # IN UNLIKELY EVENT THAT PROMPT FILE ALREADY EXISTS
+    # DELETE IT
+    if (-f /usr/tmp/anova$$.txt) rm /usr/tmp/anova$$.txt
+
+    # INITIALIZE PROMPT FILE
+    touch /usr/tmp/anova$$.txt
+
+    # ANSWER FOR NUMBER OF FACTORS
+    echo $num_fact >> /usr/tmp/anova$$.txt
+
+    # ANSWERS FOR NUMBER OF LEVELS FOR EACH FACTOR
+    foreach num($num_lvls_in_fact)
+	echo $num >> /usr/tmp/anova$$.txt
+    end
+
+    # ANSWER FOR CHECK PROMPT ON INTERACTIONS
+    echo y >> /usr/tmp/anova$$.txt
+
+    # ANSWER FOR CHECK PROMPT ON FILENAME LIST
+    echo y >> /usr/tmp/anova$$.txt
+
+    # ANSWER FOR PROMPT FOR MASK THRESHOLD
+    #echo $mask_file >> /usr/tmp/anova$$.txt
+
+    # ANSWER FOR PROMPT FOR PROBABILITY THRESHOLD
+    echo $prob_thresh >> /usr/tmp/anova$$.txt
+
+    # ANSWER FOR FINAL CHECK PROMPT
+    echo y >> /usr/tmp/anova$$.txt
+
+
+# CALL ultra_anova:
+echo `date` $user >> fidap.log
+echo nice -$priority ultra_anova $hdrfile $textfile $maskfile $x_int $y_int $z_int >> fidap.log
+echo nice -$priority ultra_anova $hdrfile $textfile $maskfile $x_int $y_int $z_int
+nice -$priority ultra_anova $hdrfile $textfile $maskfile $x_int $y_int $z_int < /usr/tmp/anova$$.txt
+\rm /usr/tmp/anova$$.txt
+
+
+# LOOP OVER FLOATING POINT IMAGE OUTPUT
+foreach file(F[01]*img pF[01]*img MSE.img)
+
+    # FIND MAX AND MIN OF FLOATING POINT IMAGE.
+    set fpmax = `maxfp $file`
+    set fpmin = `minfp $file`
+
+    # MAKE HEADER FOR FLOATING POINT IMAGE.
+    makeheader4 $file:r.hdr $dims 1 32 $fpmax $fpmin $fpmax $fpmin 16
+
+    # CONVERT TO 8-BIT IMAGE
+    echo fp2byte $file B$file
+    fp2byte $file B$file >> /dev/null
+    makeheader4 B$file:r.hdr $dims 1 8 255 0 $fpmax $fpmin 2
+
+    # GENERATE SCALED 16-BIT IMAGES IF DESIRED
+    if ($scaled_imgs == "y") then
+	echo fp2word2 $file W$file 1000
+	fp2word2 $file W$file 1000
+	set wordmax = `max16bit2 W$file`
+	set wordmin = `min16bit2 W$file`
+	makeheader4 W$file:r.hdr $dims 1 16 $wordmax $wordmin $fpmax $fpmin 4
+    endif
+
+end
+
+exit
+

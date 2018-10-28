@@ -1,0 +1,40 @@
+#!/bin/csh
+# Script for looping over subdirectories of current directory, and running
+# the same fidap script file in those subdirectories, but at staggered
+# times.
+
+# Usage: fidap_loop_script <common subdirectory> <hours per job> <start in how many hours> <script file to run> <list of subject subdirectories>
+
+# Check command line arguments.
+if ($#argv < 5) then
+    echo "Usage: fidap_loop_script <common subdirectory> <hours per job> <start in how many hours> <script file to run> <list of subject subdirectories>"
+    exit 1
+endif
+
+# Determine current (parent) directory.
+set parent_dir = `pwd`
+echo Parent directory is $parent_dir
+
+# Determine subject directories.
+set subj_dir = ( $argv[5-$#argv] )
+echo Subject directories are $subj_dir
+
+# Loop over subject directories
+set i = 0
+while ($i < $#subj_dir)
+
+   # cd into the (i+1)th subject's directory
+   @ j = $i + 1
+   echo cd $subj_dir[$j]/$argv[1]
+   cd $subj_dir[$j]/$argv[1]
+
+   # Calculate time.
+   @ time = ( $i * $argv[2] ) + $argv[3]
+   echo fidap $argv[4] now + $time hour
+   fidap $argv[4] now + $time hour
+
+   # Go back to parent directory
+   @ i ++
+   echo cd $parent_dir
+   cd $parent_dir
+end

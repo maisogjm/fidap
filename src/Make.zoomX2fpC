@@ -1,0 +1,7 @@
+zoomX2fpC: zoomX2fpC.o imgio.o
+	$(CC) $(EXTRAS) zoomX2fpC.o imgio.o -o zoomX2fpC
+zoomX2fpC.o: zoomX2fpC.c
+	$(CC) $(EXTRAS) -c zoomX2fpC.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c
+

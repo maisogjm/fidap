@@ -1,0 +1,6 @@
+correlate_images: correlate_images.o imgio.o
+	$(CC) $(EXTRAS) correlate_images.o imgio.o -o correlate_images -lm
+correlate_images.o: correlate_images.c
+	$(CC) $(EXTRAS) -c correlate_images.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

@@ -1,0 +1,16 @@
+# Andre Jesmanowicz
+# Makefile for X11 .
+
+#             CC = cc
+             RM = rm -f
+         CFLAGS = -DSYSV
+           XLIB = -lX11
+         MATLIB = -lm
+           OBJS = dvt25.o
+
+.c.o:
+	$(CC) -c "$<" $(EXTRAS) $(CFLAGS)
+
+dvt25:	$(OBJS)
+	$(RM) $@
+	$(CC) -o $@ $(EXTRAS) $(OBJS) $(XLIB) $(MATLIB)

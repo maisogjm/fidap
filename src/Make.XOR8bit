@@ -1,0 +1,6 @@
+XOR8bit: XOR8bit.o imgio.o
+	$(CC) $(EXTRAS) XOR8bit.o imgio.o -o XOR8bit
+XOR8bit.o: XOR8bit.c
+	$(CC) $(EXTRAS) -c XOR8bit.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

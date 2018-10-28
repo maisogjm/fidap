@@ -1,0 +1,211 @@
+#! /bin/csh -f
+# alignpet2pet16_scriptA
+# 01.04.93 by Jose' Ma. Maisog, M.D
+# Laboratory of Psychology and Psychopathology,
+# National Institute of Mental Health
+
+#
+# Shell script which calls Roger Woods' AIR software to align
+# a series of 16-bit images.
+
+# C executables called: alignpettopet16bit, reslice16bit, makeheader4,
+# get_dims_from, max16bit
+
+# GET STARTING TIME
+set start = `date`
+
+# INFORM USER OF USE OF THIS CODE
+scroll 10
+echo NOTE: This script calls C executables written by
+echo Roger Woods, M.D., Dept. Neurology, UCLA School of Medicine.
+echo Please note that Drs. Woods and Mazziotta have several
+echo "requests regarding use of their software; please send"
+echo inquiries regarding use of this software to:
+echo ""
+echo "     Department of Neurology"
+echo "     Reed Neurological Research Center"
+echo "     UCLA School of Medicine"
+echo "     710 Westwood Plaza"
+echo "     Los Angeles, California  90024-1769"
+echo ""
+echo ""
+echo Reference: Woods RP, Cherry SR, Mazziotta JC, Rapid Automated
+echo Algorithm for Aligning and Reslicing PET Images, Journal of
+echo Computer Assisted Tomography 16 \(4\):620-33 \(1992\).
+echo ""
+echo -n Press Return to continue...
+set dummy = $<
+echo ""
+echo "This script will register a series of 16-bit ANALYZE images,"
+echo allowing full 3D movments.
+echo All of the images will be registered to ONE of the images.
+
+# QUERY USER FOR IMAGE DIRECTORY
+echo ""
+echo -n "Please enter directory in which 16-bit ANALYZE images are kept: "
+set dir = $<
+while (! -d $dir)
+    echo Directory $dir does not exist.
+    echo ""
+    echo -n "Please enter directory in which 16-bit ANALYZE images are kept: "
+    set dir = $<
+end
+cd $dir
+touch fidap.log
+echo '******************************************************' >> fidap.log
+echo `date` " : " $user " : " alignpet2pet16_scriptD >> fidap.log
+echo "The following lines are EXACTLY as you've typed them into the script:" >> fidap.log
+
+# MAKE LIST OF IMAGES TO BE REGISTERED
+scroll 10
+echo Need root name of images to be registered.  This is the left-most
+echo string of characters in the image filenames which will match all
+echo of the images you wish to register.
+echo ""
+echo For example, if you wanted to register images named run1a001.img,
+echo run1a002.img, ..., run1b001.img, run1b002.img, etc., the root name
+echo "would be 'run1'; but if you wanted to register ONLY the images"
+echo run1a001.img, run1a002.img, etc., and NOT the images run1b001.img,
+echo "run1b002.img, etc., then the root name would be 'run1a'."
+echo ""
+echo -n "Type in root name: "
+set rootname = $<
+echo $rootname >> fidap.log
+echo ""
+set filelist = $rootname*.img
+echo "These files match the root name you have indicated:"
+\ls $rootname*.img
+
+# QUERY USER FOR STARTING FILE
+echo ""
+echo "You may not want to start with $filelist[1].  Please enter the full name"
+echo -n "of the file which you want to start with (e.g., 'mri003.img'): "
+set startfile = $<
+while (! -e $startfile)
+    echo File $startfile does not exist.
+    echo ""
+    echo -n "Please enter the full name of the file which you want to start with: "
+    set startfile = $<
+end
+echo $startfile >> fidap.log
+while ($filelist[1] != $startfile)
+    shift filelist
+end
+
+# QUERY USER FOR ENDING FILE
+echo ""
+echo "You may not want to end with $filelist[$#filelist].  Please enter the full name"
+echo -n "of the file which you want to end with (e.g., 'mri043.img'): "
+set endfile = $<
+while (! -e $endfile)
+    echo File $endfile does not exist.
+    echo ""
+    echo -n "Please enter the full name of the file which you want to end with: "
+    set endfile = $<
+end
+echo $endfile >> fidap.log
+
+# CALCULATE NUMBER OF IMAGES TO BE REGISTERED
+@ num_img2register = 1
+while ($filelist[$num_img2register] != $endfile)
+    @ num_img2register++
+end
+echo ""
+echo There are $num_img2register FILES from $filelist[1] to\
+                                        $filelist[$num_img2register].
+
+# QUERY USER FOR NAME OF REFERENCE IMAGE
+echo Please type in the name of the image which is to be the base
+echo or reference image, i.e., the image TO WHICH all the others
+echo will be registered.  INCLUDE the .img extension.
+echo This image file must have a header file, but doesn\'t
+echo necessarily have to be the first image of the series.
+echo ' '
+echo -n "ENTER name of reference image: "
+set reference=$<
+echo $reference >> fidap.log
+echo ' '
+set max = `max16bit2 $reference`
+@ ref_thresh = $max / 10
+
+# TRUNCATE RIGHT END OF filelist IF NECESSARY
+set filelist = `echo $filelist[1-$num_img2register]`
+
+# DETERMINE NAME OF ANALYZE .hdr FILE
+echo ""
+set hdrfile=$reference:r.hdr
+echo Will use $hdrfile for header information.
+set dims = `get_dims_from $hdrfile`
+
+echo ""
+echo '******************************************************'
+echo ""
+echo Finally, you must type in a number between 0 and 19.
+echo The \'nice\' command will use this number to adjust
+echo the priority of this process.  \'0\' will result in
+echo the default priority being used.  Higher numbers will
+echo result in lower priorities.  We recommend \'0\' to be
+echo used during off hours, and higher \(nicer\) numbers to
+echo be used during regular work hours.
+echo ""
+echo -n "Priority adjustment number? "
+set priority = $<
+if ($priority == "") then
+    set priority = 0
+endif
+echo $priority >> fidap.log
+echo "" >> fidap.log
+
+# LOOP OVER FILES, REGISTERING TO REFERENCE IMAGE.
+echo ""
+set file_number = 1
+echo `date` " : " $user >> fidap.log
+while ($file_number <= $num_img2register)
+
+    # DETERMINE OUTPUT IMAGE NAME
+    echo "Registering $filelist[$file_number] to $reference."
+    set outpath = $filelist[$file_number]:h
+    set outfile = $filelist[$file_number]:t
+    if ($outpath == $outfile) then
+	set outimg = R$outfile
+    else
+	set outimg = $outpath/R$outfile
+    endif
+    echo "Output will be written to $outimg."
+
+    # DETERMINE MAX OF INPUT IMAGE
+    set input_max = `max16bit $filelist[$file_number]:r`
+    @ input_thresh = $input_max / 10
+
+    # REGISTER INPUT IMAGE TO REFERENCE IMAGE
+    echo nice -$priority alignpettopet16bit $reference $filelist[$file_number] \
+	$filelist[$file_number]:r.air -t1 $ref_thresh \
+			-t2 $input_thresh -s 27 1 3 -b 5
+    echo nice -$priority alignpettopet16bit $reference $filelist[$file_number] \
+	$filelist[$file_number]:r.air -t1 $ref_thresh \
+			-t2 $input_thresh -s 27 1 3 -b 5 >> fidap.log
+    nice -$priority alignpettopet16bit $reference $filelist[$file_number] \
+	$filelist[$file_number]:r.air -t1 $ref_thresh \
+			-t2 $input_thresh -s 27 1 3 -b 5
+    echo nice -$priority reslice16bit $filelist[$file_number]:r.air $outimg -k
+    echo nice -$priority reslice16bit $filelist[$file_number]:r.air $outimg -k >> fidap.log
+    nice -$priority reslice16bit $filelist[$file_number]:r.air $outimg -k
+
+    # MAKE HEADER FOR RESAMPLED IMAGE
+    set max = `max16bit2 $outimg`
+    echo makeheader4 $outimg:r.hdr $dims 1 16 $max 0 $max 0 4
+    makeheader4 $outimg:r.hdr $dims 1 16 $max 0 $max 0 4
+
+    # COMPRESS ORIGINAL IMAGE
+    # compress $filelist[$file_number]
+
+    # INCREMENT file_number
+    @ file_number++
+
+end
+
+# GET ENDING TIME
+echo ""
+echo "Started at $start"
+echo Ended at `date`
+sleep 10

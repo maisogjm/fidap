@@ -1,0 +1,4 @@
+minfp: minfp.o
+	$(CC) $(EXTRAS) minfp.o -o minfp
+minfp.o: minfp.c
+	$(CC) $(EXTRAS) -c minfp.c

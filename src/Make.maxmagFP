@@ -1,0 +1,6 @@
+maxmagFP: maxmagFP.o imgio.o
+	$(CC) $(EXTRAS) maxmagFP.o imgio.o -o maxmagFP
+maxmagFP.o: maxmagFP.c
+	$(CC) $(EXTRAS) -c maxmagFP.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

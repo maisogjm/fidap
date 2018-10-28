@@ -1,0 +1,6 @@
+clusterGE_nocorner: clusterGE_nocorners.o imgio.o
+	$(CC) $(EXTRAS) clusterGE_nocorners.o imgio.o -o clusterGE_nocorners
+clusterGE_nocorners.o: clusterGE_nocorners.c
+	$(CC) $(EXTRAS) -c clusterGE_nocorners.c
+imgio.o: imgio.c analyze6.h
+	$(CC) $(EXTRAS) -c imgio.c

@@ -1,0 +1,6 @@
+maxFP2: maxFP2.o imgio.o
+	$(CC) $(EXTRAS) maxFP2.o imgio.o -o maxFP2
+maxFP2.o: maxFP2.c
+	$(CC) $(EXTRAS) -c maxFP2.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

@@ -1,0 +1,4 @@
+stdFP: stdFP.o
+	$(CC) $(EXTRAS) stdFP.o -o stdFP -lm
+stdFP.o: stdFP.c
+	$(CC) $(EXTRAS) -c stdFP.c

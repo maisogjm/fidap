@@ -1,0 +1,6 @@
+fmri_mask2: fmri_mask2.o imgio.o 
+	$(CC) $(EXTRAS) fmri_mask2.o imgio.o -o fmri_mask2 -lm
+fmri_mask2.o: fmri_mask2.c
+	$(CC) $(EXTRAS) -c fmri_mask2.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

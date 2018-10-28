@@ -1,0 +1,4 @@
+minFP3: minFP3.o
+	$(CC) $(EXTRAS) minFP3.o -o minFP3
+minFP3.o: minFP3.c
+	$(CC) $(EXTRAS) -c minFP3.c

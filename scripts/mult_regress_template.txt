@@ -1,0 +1,193 @@
+####################################################################
+# Template input textfile for running multiple regression.
+# You will need to modify this file to run on your own particular
+# data set.  Pound signs  "#" are comments.  Note that blank
+# lines without pound signs will be interpreted as carriage returns,
+# so don't include any blank lines unless you really mean to have
+# a carriage return.
+#
+####################################################################
+# Select Single-Subject Analysis Menu.
+3
+####################################################################
+# Select Multiple Regression.
+15
+####################################################################
+# Here type in the name of the output directory.
+# If this is the current directory, you can use a "."
+# You can use absolute pathnames, e.g., /u4/data6/mri/raw_data
+/u1/work
+####################################################################
+# Input textfile containing names of files.
+# Filenames can be absolute or relative pathnames.
+/u1/work/input.txt
+####################################################################
+# ANALYZE header file.  Can be absolute or relative pathname.
+# In this example, we give an absolute pathname.
+/u1/work/Rr1_ctwm015.hdr
+####################################################################
+# 8-bit mask file (.img ANALYZE format file).
+/u1/work/mask_20_e.img
+####################################################################
+# Text file specifying slice acquisition sequence.
+# Usually odd slices first, then even slices.
+slice_seq.txt
+####################################################################
+# Number of dependent variables.  Leave set to 1 if you're
+# concatenating fMRI runs.
+1
+####################################################################
+# Total number of scans across all runs in the fMRI data set.
+# E.g., if you have eight runs and 60 scans per run, you
+# would have a total of 480 scans.
+480
+####################################################################
+# TR in seconds.
+3
+####################################################################
+# Total number of independent variables (experimental effects)
+# including effects of no interest.
+19
+####################################################################
+# Number of effects of interest.
+3
+####################################################################
+# Now list the textfiles for all of the effects of no interest.
+# For our standard analyses, there will be two effects of no
+# interest for every fMRI run, one to model run-to-run changes
+# in fMRI signal intensity, one to model within-run linear
+# drift in the fMRI signal.
+ones_1.txt
+ones_2.txt
+ones_3.txt
+ones_4.txt
+ones_5.txt
+ones_6.txt
+ones_7.txt
+ones_8.txt
+ramp_1.txt
+ramp_2.txt
+ramp_3.txt
+ramp_4.txt
+ramp_5.txt
+ramp_6.txt
+ramp_7.txt
+ramp_8.txt
+####################################################################
+# Now for every independent variable of interest, list the five
+# following pieces of information:
+# (1) Text file for independent variable.
+# (2) Normalization flag for independent variable.
+#      0 - No normalization."
+#      1 - Set mean to zero, leave peak-to-peak alone.
+#      2 - Set mean to zero, and peak-to-peak amplitude to 1.
+# (3) Lag estimate or lag map.
+# (4) Dispersion estimate or dispersion map.
+# (5) Flag indicating whether lag estimate is to be used as
+#     is, or to be adjusted for the slice acquisition sequence.
+#      0 - Use lag estimate as is.
+#      1 - Adjust lag estimate for slice acquisition sequence.
+#
+# Below are lines for THREE effects of interest, but you might
+# have a different number of effects of interest.
+# Edit the file accordingly.
+#
+# First variable of interest.
+vis_stim.txt
+1
+best_lag.img
+1.8
+0
+# Second variable of interest.
+face_stim.txt
+1
+best_lag.img
+1.8
+0
+# Third variable of interest.
+memtask.txt
+1
+best_lag.img
+1.8
+0
+####################################################################
+# Number of voxels of interest.  Multiple regression will be performed
+# for all voxels included in the 8-bit mask.  But, extra information
+# will be output for the voxels of interest you indicate.  This extra
+# information will be output in new subdirectories named voxel_X_Y_Z,
+# where XYZ are the coordinates.  You can have an arbitrary number of
+# voxels of interest.  If you have none, type in a "0"
+#
+# The extra information is a set of intermediate matrices which
+# were calculated in the regression, and which will be stored in
+# textfiles in those subdirectories.  You can load these textfiles
+# into your favorite stats package and perform other analyses on them.
+# For example, you can load Y.dat (the fMRI time series data) and
+# X.dat (the design matrix) into MATLAB, and then confirm the
+# regression coefficients using the MATLAB command
+#
+# B_hat = inv(X'*X)*X'*Y
+#
+2
+####################################################################
+# Now type in the XYZ coordinates of the first voxel of interest,
+# followed by the XYZ coordinates of the second voxel of interest,
+# etc.  If you had no voxels of interest, remove these lines,
+# taking care not to leave any blank lines.
+24
+27
+8
+24
+27
+9
+####################################################################
+# Priority.  Here, give a number between 0 and 19 to set the priority.
+# 0 means default high priority, 19 means lowest priority.  During
+# regular workhours, consider using 19.
+19
+####################################################################
+# If you want maps of effective df to be output, change the following
+# "n" to a "y".  This might be of interest if you were using dispersion
+# maps, but if you were assuming the same estimate of dispersion across
+# all voxels, this would be unnecessary.
+n
+####################################################################
+# This program will output regression coefficient maps and Wilks'
+# Lambda maps for the independent variables of interest.  If you want,
+# it will also output regression coefficient maps and Wilks' Lambda maps
+# for all other independent variables; this will of course require more
+# disk space.  Change the following "n" to a "y" if you desire maps for
+# variables of NO interest, IN ADDITION to the maps for the variables
+# of interest.  You probably will want to leave this set to "n".
+n
+####################################################################
+# If you want, after all voxels are regressed, this program will output
+# the fMRI data with all effects of no interest removed, rounded to the
+# nearest 16-bit integer.  The grand global mean will be added back to
+# the voxel values to avoid negative numbers.  Change the following "n"
+# to a "y" if you desire a copy of the fMRI data with all effects of no
+# interest removed.  You probably will want to leave this set to "n".
+n
+####################################################################
+# Ratio normalization to set the global mean intensity of each scan to
+# a constant can be performed.  Change the following "y" to a "n" if
+# you desire NO normalization to be done.
+y
+####################################################################
+# Sometimes it is desirable to rerun an analysis, adding more voxels of
+# interest, but without reanalyzing all other voxels.  This can save
+# lots of time.  If this is the first time you're running the multiple
+# regression analysis on this data set, recommend that you leave this
+# set to "n".  If you really do want the multiple regression to be
+# run ONLY for the voxels of interest, change this to an "y".
+n
+####################################################################
+# After the multiple regression is finished, you will be left at
+# the Single-Subject Analysis Menu of fidap.  The following "18"
+# exits from fidap.  Without this, you will not exit fidap gracefully.
+# Of course, you can have fidap do other procedures at this point.
+# For example, to return to the Main Menu, and then go into the
+# menu for Statistical Conversions and Correcting for Multiple
+# Comparisons, you'd have a "17" and a "4" (on separate lines)
+# instead of a "18".
+18

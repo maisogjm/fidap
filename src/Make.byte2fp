@@ -1,0 +1,4 @@
+byte2fp: byte2fp.o
+	$(CC) $(EXTRAS) byte2fp.o -o byte2fp
+byte2fp.o: byte2fp.c
+	$(CC) $(EXTRAS) -c byte2fp.c

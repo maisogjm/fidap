@@ -1,0 +1,4 @@
+varFP2: varFP2.o
+	$(CC) $(EXTRAS) varFP2.o -o varFP2
+varFP2.o: varFP2.c
+	$(CC) $(EXTRAS) -c varFP2.c

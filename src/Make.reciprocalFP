@@ -1,0 +1,4 @@
+reciprocalFP: reciprocalFP.o
+	$(CC) $(EXTRAS) reciprocalFP.o -o reciprocalFP -lm
+reciprocalFP.o: reciprocalFP.c
+	$(CC) $(EXTRAS) -c reciprocalFP.c

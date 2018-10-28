@@ -1,0 +1,4 @@
+div: div.o
+	$(CC) $(EXTRAS) div.o -o div
+div.o: div.c
+	$(CC) $(EXTRAS) -c div.c

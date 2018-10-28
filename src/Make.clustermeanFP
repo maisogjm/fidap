@@ -1,0 +1,6 @@
+clustermeanFP: clustermeanFP.o imgio.o
+	$(CC) $(EXTRAS) clustermeanFP.o imgio.o -o clustermeanFP
+clustermeanFP.o: clustermeanFP.c
+	$(CC) $(EXTRAS) -c clustermeanFP.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

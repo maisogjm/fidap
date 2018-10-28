@@ -1,0 +1,9 @@
+doimgsamp: doimgsamp.o imgsamp.o imgio.o
+	$(CC) $(EXTRAS) doimgsamp.o imgsamp.o imgio.o \
+			-o doimgsamp
+doimgsamp.o: doimgsamp.c
+	$(CC) $(EXTRAS) -c doimgsamp.c
+imgsamp.o: imgsamp.c
+	$(CC) $(EXTRAS) -c imgsamp.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

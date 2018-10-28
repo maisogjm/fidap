@@ -1,0 +1,6 @@
+mri001.img mri011.img 1
+mri002.img mri012.img 1
+mri003.img mri013.img 1
+mri004.img mri014.img 1
+mri005.img mri015.img 1
+mri006.img mri016.img 1

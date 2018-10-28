@@ -1,0 +1,6 @@
+fp2_to_gray: fp2_to_gray.o imgio.o
+	$(CC) $(EXTRAS) fp2_to_gray.o imgio.o -o fp2_to_gray
+fp2_to_gray.o: fp2_to_gray.c
+	$(CC) $(EXTRAS) -c fp2_to_gray.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

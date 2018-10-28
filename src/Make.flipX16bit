@@ -1,0 +1,4 @@
+flipX16bit: flipX16bit.o
+	$(CC) $(EXTRAS) flipX16bit.o -o flipX16bit
+flipX16bit.o: flipX16bit.c
+	$(CC) $(EXTRAS) -c flipX16bit.c

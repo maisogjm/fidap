@@ -1,0 +1,4 @@
+makemaskfpGT: makemaskfpGT.o
+	$(CC) $(EXTRAS) makemaskfpGT.o -o makemaskfpGT -lm
+makemaskfpGT.o: makemaskfpGT.c
+	$(CC) $(EXTRAS) -c makemaskfpGT.c

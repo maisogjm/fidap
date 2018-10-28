@@ -1,0 +1,4 @@
+add: add.o
+	$(CC) $(EXTRAS) add.o -o add
+add.o: add.c
+	$(CC) $(EXTRAS) -c add.c

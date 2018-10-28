@@ -1,0 +1,4 @@
+varFP: varFP.o
+	$(CC) $(EXTRAS) varFP.o -o varFP
+varFP.o: varFP.c
+	$(CC) $(EXTRAS) -c varFP.c

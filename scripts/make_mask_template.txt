@@ -1,0 +1,45 @@
+####################################################################
+# Template input textfile for making an 8-bit mask.
+# You will need to modify this file to run on your own particular
+# data set.  Pound signs  "#" are comments.  Note that blank
+# lines without pound signs will be interpreted as carriage returns,
+# so don't include any blank lines unless you really mean to have
+# a carriage return.
+#
+####################################################################
+# Select Pre-processing Utilities Menu.
+2
+####################################################################
+# Select Generate an 8-bit mask
+14
+####################################################################
+# Here type in the name of the output directory.
+# If this is the current directory, you can use a "."
+# You can use absolute pathnames, e.g., /u4/data6/mri/raw_data
+.
+####################################################################
+# Input textfile containing names of files.
+# Filenames within textfile can be absolute or relative pathnames.
+# Use the "wc -w" command to check the number of lines in this input
+# textfile.  E.g., running the command "wc -w input.txt" should
+# return the number of scans to be used, no more, no less.
+namelist.txt
+####################################################################
+# ANALYZE header file.  Can be absolute or relative pathname.
+run1_scan_001.hdr
+####################################################################
+# Percentage threshold.  A mean scan will be calculated, and then
+# a mask will be made from this mean scan by thresholding it.
+# Below, you will need to specify the threshold T. All voxels in the
+# mean image which have voxel intensity T % the maximum voxel
+# intensity in the mean image or greater will be set to 1 in the mask.
+# E.g., if you want a 10 % threshold, type in <10>.
+20
+####################################################################
+# After the 8-bit mask is generated, you will be left at
+# the Pre-Processing Utilities Menu of fidap.  The following "19"
+# exits from fidap.  Of course, you can have fidap do other
+# procedures at this point.  For example, to return to the Main Menu,
+# and then go into the Single-Subject Analysis menu,
+# you'd have an "18" and a "3" (on separate lines) instead of a "19".
+19

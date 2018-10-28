@@ -1,0 +1,6 @@
+fmri_pairedt_ratio: fmri_pairedt_ratio.o imgio.o
+	$(CC) $(EXTRAS) fmri_pairedt_ratio.o imgio.o -o fmri_pairedt_ratio -lm
+fmri_pairedt_ratio.o: fmri_pairedt_ratio.c
+	$(CC) $(EXTRAS) -c fmri_pairedt_ratio.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

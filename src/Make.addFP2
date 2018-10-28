@@ -1,0 +1,4 @@
+addFP2: addFP2.o
+	$(CC) $(EXTRAS) addFP2.o -o addFP2
+addFP2.o: addFP2.c
+	$(CC) $(EXTRAS) -c addFP2.c

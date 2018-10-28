@@ -1,0 +1,4 @@
+max8bit2: max8bit2.o
+	$(CC) $(EXTRAS) max8bit2.o -o max8bit2
+max8bit2.o: max8bit2.c
+	$(CC) $(EXTRAS) -c max8bit2.c

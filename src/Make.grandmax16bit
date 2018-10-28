@@ -1,0 +1,6 @@
+grandmax16bit: grandmax16bit.o imgio.o
+	$(CC) $(EXTRAS) grandmax16bit.o imgio.o -o grandmax16bit -lm
+grandmax16bit.o: grandmax16bit.c
+	$(CC) $(EXTRAS) -c grandmax16bit.c
+imgio.o:    analyze6.h imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

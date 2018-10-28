@@ -1,0 +1,49 @@
+####################################################################
+# Template input textfile for registering scans to a particular
+# reference scan, rather than the mean of the scans.
+# You will need to modify this file to run on your own particular
+# data set.  Pound signs  "#" are comments.  Note that blank
+# lines without pound signs will be interpreted as carriage returns,
+# so don't include any blank lines unless you really mean to have
+# a carriage return.
+#
+####################################################################
+# Select Pre-processing Utilities Menu
+2
+####################################################################
+# Select Registration, with particular volume as reference.
+13
+####################################################################
+# Empty line here to give a carriage return at the prompt
+
+####################################################################
+# Here type in the name of the data directory.
+# If this is the current directory, you can use a "."
+# You can use absolute pathnames, e.g., /u4/data6/mri/raw_data
+.
+####################################################################
+# Root name.
+run
+####################################################################
+# Starting scan.  Registration will start with this scan.
+run1_scan_001.img
+####################################################################
+# Ending scan.  Registration will end with this scan.
+run2_scan_024.img
+####################################################################
+# Reference scan.  This is the volume which all the scans will be
+# registered to.
+a_mean_scan.img
+####################################################################
+# Priority.  Here, give a number between 0 and 19 to set the priority.
+# 0 means default high priority, 19 means lowest priority.  During
+# regular workhours, consider using 19.
+0
+####################################################################
+# After the conversion is finished, you will be left at
+# the Pre-Processing Utilities Menu of fidap.  The following "19"
+# exits from fidap.  Of course, you can have fidap do other
+# procedures at this point.  For example, to return to the Main Menu,
+# and then go into the Single-Subject Analysis menu,
+# you'd have an "18" and a "3" (on separate lines) instead of a "19".
+19

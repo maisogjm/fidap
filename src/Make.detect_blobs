@@ -1,0 +1,4 @@
+detect_blobs: detect_blobs.o
+	$(CC) $(EXTRAS) detect_blobs.o -o detect_blobs -lm
+detect_blobs.o: detect_blobs.c
+	$(CC) -c detect_blobs.c

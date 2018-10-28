@@ -1,0 +1,6 @@
+add16bit1: add16bit1.o imgio.o
+	$(CC) $(EXTRAS) add16bit1.o imgio.o -o add16bit1
+add16bit1.o: add16bit1.c
+	$(CC) $(EXTRAS) -c add16bit1.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

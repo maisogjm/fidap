@@ -1,0 +1,4 @@
+word2fp2: word2fp2.o
+	$(CC) $(EXTRAS) word2fp2.o -o word2fp2
+word2fp2.o: word2fp2.c
+	$(CC) $(EXTRAS) -c word2fp2.c

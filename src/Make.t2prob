@@ -1,0 +1,12 @@
+t2prob: t2prob.o betai.o nrutil.o betacf.o gammln.o
+	$(CC) $(EXTRAS) t2prob.o betai.o nrutil.o betacf.o gammln.o -o t2prob -lm
+t2prob.o: t2prob.c
+	$(CC) $(EXTRAS) -c t2prob.c
+gammln.o: gammln.c
+	$(CC) $(EXTRAS) -c gammln.c
+betai.o: betai.c
+	$(CC) $(EXTRAS) -c betai.c
+nrutil.o: nrutil.c
+	$(CC) $(EXTRAS) -c nrutil.c
+betacf.o: betacf.c
+	$(CC) $(EXTRAS) -c betacf.c

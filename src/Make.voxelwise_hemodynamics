@@ -1,0 +1,9 @@
+voxelwise_hemodynamics: voxelwise_hemodynamics.o imgio.o nrutil.o
+	$(CC) $(EXTRAS) voxelwise_hemodynamics.o imgio.o nrutil.o -o \
+	voxelwise_hemodynamics -lm
+voxelwise_hemodynamics.o: voxelwise_hemodynamics.c
+	$(CC) $(EXTRAS) -c voxelwise_hemodynamics.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c
+nrutil.o: nrutil.c
+	$(CC) $(EXTRAS) -c nrutil.c

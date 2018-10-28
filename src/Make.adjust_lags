@@ -1,0 +1,6 @@
+adjust_lags: adjust_lags.o imgio.o
+	$(CC) $(EXTRAS) adjust_lags.o imgio.o -o adjust_lags -lm
+adjust_lags.o: adjust_lags.c
+	$(CC) $(EXTRAS) -c adjust_lags.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

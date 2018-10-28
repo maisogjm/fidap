@@ -1,0 +1,4 @@
+meanFP2: meanFP2.o
+	$(CC) $(EXTRAS) meanFP2.o -o meanFP2
+meanFP2.o: meanFP2.c
+	$(CC) $(EXTRAS) -c meanFP2.c

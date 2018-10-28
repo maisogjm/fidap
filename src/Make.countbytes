@@ -1,0 +1,4 @@
+countbytes: countbytes.o
+	$(CC) $(EXTRAS) countbytes.o -o countbytes
+countbytes.o: countbytes.c
+	$(CC) $(EXTRAS) -c countbytes.c

@@ -1,0 +1,4 @@
+tal2az: tal2az.o
+	$(CC) $(EXTRAS) tal2az.o -o tal2az
+tal2az.o: tal2az.c
+	$(CC) $(EXTRAS) -c tal2az.c

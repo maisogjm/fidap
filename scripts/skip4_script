@@ -1,0 +1,327 @@
+#!/bin/csh -f
+# skip4_script, script to reconstruct EPI images
+# Written by Jose' Ma. Maisog, M.D.
+# Section on Functional Brain Imaging
+# Laboratory of Psychology and Psychopathology
+# NIMH
+#
+# Makes a call to Allen Song's C code epirecon to reconstruct
+# EPI images, new naming convention, and then converts those
+# images to ANALYZE format.
+#
+# C executables called: reorient16bit, extract_rhuser, skip4, excise,
+# max16bit, makeheader4
+
+# QUERY USER FOR IMAGE DIRECTORY
+scroll 10
+echo Note: This script calls a version of skip4, an executable written by
+echo Allen Song, NIH/NIMH/LPP.
+echo It will reconstruct raw P-files and convert them to ANALYZE format.
+echo ""
+echo -n "Please enter directory in which raw P-files are kept: "
+set dir = $<
+while (! -e $dir)
+    echo Directory $dir does not exist.
+    echo ""
+    echo -n "Please enter directory in which raw P-files are kept: "
+    set dir = $<
+end
+cd $dir
+touch fidap.log
+echo '******************************************************' >> fidap.log
+echo `date` " : " $user " : " skip4_script >> fidap.log
+
+# Set voxel dimensions
+echo " "
+echo -n "Voxel size in X? "
+set vox_xdim = $<
+echo -n "Voxel size in Y? "
+set vox_ydim = $<
+echo -n "Voxel size in Z? "
+set vox_zdim = $<
+
+# Set image dimensions and number of slices
+echo -n "Number of voxels along X-axis (xdim)? "
+set xdim = $<
+echo -n "Number of voxels along Y-axis (ydim)? "
+set ydim = $<
+#echo -n "Number of slices per volume   (zdim)? "
+#set num_slices = $<
+
+# Determine whether reorienting is desired.  If so, a call to
+# reorient16bit, a 16-bit version of Roger Woods' reorient code,
+# will be made.  User must know ahead of time which flag to use
+echo -n "Does a call to reorient16bit need to be made? <y/n>? "
+set reorient = $<
+while (($reorient != "y") && ($reorient != "n"))
+    echo Type \'y\' or \'n\'.
+    echo -n "Does a call to reorient16bit need to be made? <y/n>? "
+    set reorient = $<
+end
+if ($reorient == 'y') then
+    echo " "
+    echo Here are the switches for reorient16bit:
+    reorient16bit
+    echo " "
+    echo " "
+    echo \(used \"xy\" for Susan\'s sagittal images.\)
+    echo -n "Which switch(es) do you want? "
+    set reorient_switch = $<
+endif
+
+# Ask user whether compression is desired.
+echo ""
+echo -n "Do you want the P-files to be compressed after reconstruction <y/n> "
+set compress = $<
+while (($compress != "y") && ($compress != "n"))
+    echo Type \'y\' or \'n\'.
+    echo -n "Do you want the P-files to be compressed after reconstruction <y/n> "
+    set compress = $<
+end
+
+# Set directory where data will be kept.  This should just be a name,
+# not an absolute pathname.  It will be created in the current directory.
+echo " "
+echo Name for directory where reconstructed data will be placed
+echo -n "(just name, NOT absolute pathname)? "
+set DATA = $<
+if (! -e $DATA) then
+    echo mkdir $DATA
+    mkdir $DATA
+endif
+
+# Determine list of P-files to be reconstructed.
+echo " "
+echo Contents of current directory:
+\ls -l
+echo " "
+echo -n "How many P-files are to be reconstructed? "
+set numPfiles = $<
+set index = 1
+set Pfile_list
+set rootname
+while ($index <= $numPfiles)
+    echo " "
+    echo -n "  Name of P-file #${index} (not including .Z extension)? "
+    set Pfile_list = ($Pfile_list $<)
+    echo -n "  Rootname for $Pfile_list[$index]? "
+    set rootname = ($rootname $<)
+    @ index++
+end
+
+# Query user for textfile containing slice acquisition sequence.
+echo " "
+echo -n "Text file containing slice acquisition sequence? "
+set sequence_file = $<
+while (! -e $sequence_file)
+    echo File $sequence_file does not exist.
+    echo ""
+    echo -n "Text file containing slice acquisition sequence? "
+    set sequence_file = $<
+end
+set slice_seq1 = `cat $sequence_file`
+echo "Slice acquisition sequence is: $slice_seq1"
+set slice_seq2
+set index1 = 1
+while ($index1 <= $#slice_seq1)
+    set index2 = 1
+
+    while ($index1 != $slice_seq1[$index2])
+        @ index2 ++
+    end
+
+    set slice_seq2 = ($slice_seq2 $index2)
+
+    @ index1 ++
+end
+echo "Thus, the slices are stored on disk in this sequence: $slice_seq2"
+
+# Ask user if it's okay to delete raw files
+echo ""
+echo ""
+echo -n "Delete raw format slices after making ANALYZE images <y/n>? "
+set del_raw = $<
+while (($del_raw != "y") && ($del_raw != "n"))
+    echo Type \'y\' or \'n\'.
+    echo -n "Delete raw format slices after making ANALYZE images <y/n>? "
+    set del_raw = $<
+end
+
+echo ""
+echo '******************************************************'
+echo ""
+echo Finally, you must type in a number between 0 and 19.
+echo The \'nice\' command will use this number to adjust
+echo the priority of this process.  \'0\' will result in
+echo the default priority being used.  Higher numbers will
+echo result in lower priorities.  We recommend \'0\' to be
+echo used during off hours, and higher \(nicer\) numbers to
+echo be used during regular work hours.
+echo ""
+echo -n "Priority adjustment number? "
+set priority = $<
+if ($priority == "") then
+    set priority = 0
+endif
+echo $priority >> fidap.log
+
+# Confirm with user if okay to continue.
+echo " "
+echo " "
+echo About to start reconstructions.  This may take a while.
+echo Check the above information to make sure it\'s correct.
+echo " "
+echo -n "Continue <y/n>? "
+set continue = $<
+while (($continue != "y") && ($continue != "n"))
+    echo Type \'y\' or \'n\'.
+    echo -n "Continue <y/n>? "
+    set continue = $<
+end
+if ($continue == 'n') then
+   exit
+endif
+
+# Make list of numbers (get rid of first entry, which will be '0000').
+# Truncated vol_num to only three digits because of "Arguments too long." error.
+set vol_num = {0,1,2,3,4,5,6,7,8,9}{0,1,2,3,4,5,6,7,8,9}{0,1,2,3,4,5,6,7,8,9}
+#set vol_num = {0,1,2,3,4,5,6,7,8,9}{0,1,2,3,4,5,6,7,8,9}{0,1,2,3,4,5,6,7,8,9}{0,1,2,3,4,5,6,7,8,9}
+shift vol_num
+set slice_num = {0,1,2,3,4,5,6,7,8,9}{0,1,2,3,4,5,6,7,8,9}
+shift slice_num
+
+# Reconstruct P-files, convert to ANALYZE format, flip in X & Y if desired.
+set index = 0
+touch fidap.log
+echo `date` " : " $user >> fidap.log
+foreach FILE ( $Pfile_list )
+
+    # Increment index
+    @ index++
+
+    # Uncompress P-file if necessary.
+    # Now using gunzip rather than the UNIX uncompress
+    #if (-e $FILE.Z) then
+    #    echo Uncompressing $FILE.Z...
+    #    uncompress $FILE.Z
+    #endif
+    if (-e $FILE.gz) then
+        echo Uncompressing $FILE.gz...
+        nice -$priority gunzip $FILE.gz
+    else if (-e $FILE.Z) then
+        echo Uncompressing $FILE.Z...
+        nice -$priority uncompress $FILE.Z
+    endif
+    set FILE = $FILE:r
+
+    # Loop over slices, calling skip4
+    # Store a record of the call to epirecon in fidap.log,
+    # and echo the call to the screen.
+    set num_slices = `extract_rhuser $FILE 7`
+    set num_time_pts = `extract_rhuser $FILE 6`
+    echo Running the command skip4 $FILE X $num_time_pts $num_slices slX.$rootname[$index]
+    echo where slice number X runs from 1 to $num_slices
+    echo Running the command skip4 $FILE X $num_time_pts $num_slices slX.$rootname[$index] >> fidap.log
+    echo where slice number X runs from 1 to $num_slices >> fidap.log
+
+    set physical_slice = 1
+    while ($physical_slice <= $num_slices)
+        # Call skip4
+        echo "Pfile $FILE, slice number ${physical_slice}:"
+        nice -$priority skip4 $FILE $slice_seq2[$physical_slice] $num_time_pts $num_slices \
+            sl$slice_num[$physical_slice].$rootname[$index]
+
+        # Increment physical_slice
+        @ physical_slice ++
+    end
+
+    # Compress the P-file if desired
+    if ($compress == 'y') then
+        echo Compressing $FILE....
+        # compress $FILE
+        nice -$priority gzip $FILE
+    endif
+
+    # Make temporary directory for reconstucted raw-format files and move them
+    # into that directory, slice-by-slice.  Then cd into that directory.
+    echo mkdir recon_$FILE
+    mkdir recon_$FILE
+    set raw_img_no = 1
+    while ($raw_img_no <= $num_slices)
+        \mv sl$slice_num[$raw_img_no].*.* recon_$FILE
+        @ raw_img_no++
+    end
+    cd recon_$FILE
+
+    # Loop over time points and create ANALYZE volumes by splicing together
+    # raw-format files.
+    set anlzimgnum = 1
+    while ($anlzimgnum <= $num_time_pts)
+        touch $rootname[$index]$vol_num[$anlzimgnum].img
+        echo "$rootname[$index]$vol_num[$anlzimgnum].img :"
+
+        # Truncate and then concatenate raw files into ANALYZE .img file, deleting
+        # raw files along the way if desired, then make ANALYZE .hdr header file.
+        set raw_img_no = 1
+        while ($raw_img_no <= $num_slices)
+            echo "  sl$slice_num[$raw_img_no].$rootname[$index].0$vol_num[$anlzimgnum]"
+            nice -$priority excise sl$slice_num[$raw_img_no].$rootname[$index].0$vol_num[$anlzimgnum] \
+                        $rootname[$index]$vol_num[$anlzimgnum].img 0 8192
+            if (($del_raw == "y") || ($del_raw == "Y")) then
+                \rm sl$slice_num[$raw_img_no].$rootname[$index].0$vol_num[$anlzimgnum]
+            endif
+            @ raw_img_no++
+        end
+        set max = `max16bit $rootname[$index]$vol_num[$anlzimgnum]`
+        makeheader4 $rootname[$index]$vol_num[$anlzimgnum].hdr \
+                        $xdim $ydim $num_slices $vox_xdim $vox_ydim \
+                        $vox_zdim 1 16 $max 0 $max 0 4 1
+
+        # File in X and/or Y if desired.
+        #if ($flip_in_Y == 'y') then
+        #    echo flipY16bit $rootname[$index]$vol_num[$anlzimgnum] \
+        #                $rootname[$index]$vol_num[$anlzimgnum] >> ../fidap.log
+        #    flipY16bit  $rootname[$index]$vol_num[$anlzimgnum] \
+        #                $rootname[$index]$vol_num[$anlzimgnum]
+        #endif
+
+        #if ($flip_in_X == 'y') then
+        #    echo flipX16bit $rootname[$index]$vol_num[$anlzimgnum] \
+        #                $rootname[$index]$vol_num[$anlzimgnum] >> ../fidap.log
+        #    flipX16bit  $rootname[$index]$vol_num[$anlzimgnum] \
+        #                $rootname[$index]$vol_num[$anlzimgnum]
+        #endif
+
+        # Call reorient16bit if desired.  Need to remake header.
+        if ($reorient == 'y') then
+            echo nice -$priority reorient16bit $rootname[$index]$vol_num[$anlzimgnum].hdr \
+                        $rootname[$index]$vol_num[$anlzimgnum] \
+                        $reorient_switch o
+
+            echo nice -$priority reorient16bit $rootname[$index]$vol_num[$anlzimgnum].hdr \
+                        $rootname[$index]$vol_num[$anlzimgnum] \
+                        $reorient_switch o >> ../fidap.log
+
+            nice -$priority reorient16bit $rootname[$index]$vol_num[$anlzimgnum].hdr \
+                        $rootname[$index]$vol_num[$anlzimgnum] \
+                        $reorient_switch o
+
+            set max = `max16bit $rootname[$index]$vol_num[$anlzimgnum]`
+            makeheader4 $rootname[$index]$vol_num[$anlzimgnum].hdr \
+                        $xdim $ydim $num_slices $vox_xdim $vox_ydim \
+                        $vox_zdim 1 16 $max 0 $max 0 4
+        endif
+
+        # Increment anlzimgnum.
+        @ anlzimgnum++
+    end
+
+    # Move ANALYZE format files into final data directory,
+    # go back up to parent directory, remove temporary directory.
+    \mv *.img *.hdr ../$DATA
+    cd ..
+    if (($del_raw == "y") || ($del_raw == "Y")) then
+        rmdir recon_$FILE
+    endif
+end
+

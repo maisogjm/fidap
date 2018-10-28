@@ -1,0 +1,515 @@
+#! /bin/csh -f
+# MENU DRIVER FOR NIH FUNCTIONAL IMAGING DATA ANALYSIS PLATFORM
+# Shell script started 08/93 by Jose' Ma. Maisog, M.D.
+# to analyze functional neuroimages.  This shell script is just
+# a menu driver which calls secondary shell scripts specially
+# written for specific tasks.  The secondary shell scripts in
+# turn call C executables, and sometimes call tertiary shell
+# scripts.  NIH fidap is currently under continual revision.
+# Send questions or comments to joem@alw.nih.gov
+
+# DISPLAY PICTURE -- COMMENTED OUT.
+#set xv_path = `which xv`
+#set fidap_tif = `which fidap.TIF`
+#if (($#xv_path == 1) && ($?DISPLAY)) then
+#    xv -geometry +1+1 $fidap_tif &
+#endif
+
+# MAIN MENU
+scroll 5
+echo Welcome to the NIH Functional Imaging Data Analysis Platform\!
+echo ""
+echo NIH fidap can be invoked with the name of an input textfile
+echo containing responses to NIH fidap prompts, as a command line
+echo argument.  See the textfiles convolve3D_template.txt,
+echo lag_and_disp_template.txt, and mult_regress_template.txt for
+echo examples.
+echo ""
+echo After the textfile name, you can optionally give the time
+echo the fidap job is to be started.  E.g.,
+echo ""
+echo '            fidap input.txt'
+echo '            fidap input.txt 0815am Jan 24'
+echo '            fidap input.txt 8:15am Jan 24'
+echo '            fidap input.txt now + 1 day'
+echo '            fidap input.txt now + 1 hour'
+echo '            fidap input.txt 5 pm Friday'
+echo ""
+echo ""
+echo Use \"at -l\" to see jobs in the \"at\" queue, and use \"at -r\"
+echo to remove jobs from the \"at\" queue.  See the man page for the
+echo at command for more information on how to specify times.
+echo ""
+echo ""
+main_menu:
+echo "----- MAIN MENU -----"
+echo ""
+echo "(1) About NIH fidap, and References"
+echo "(2) Pre-processing Utilities"
+echo "(3) Single-Subject Analysis"
+echo "(4) Statistical Conversions and"
+echo "    Correcting for Multiple Comparisons"
+echo "(5) Post-processing Utilities"
+echo "(6) Exit"
+main_menu_prompt:
+echo ""
+echo -n "Select an action (1-6): "
+set choice = $<
+switch ( "$choice" )
+    case 1:
+    scroll 10
+    set about_fidap = `which about_fidap`
+    more $about_fidap
+    echo -n Press Return to continue...
+    set dummy = $<
+    scroll 10
+    goto main_menu
+    breaksw
+
+    case 2:
+    goto preprocessing_utilities_menu
+    scroll 10
+    goto main_menu
+    breaksw
+
+    case 3:
+    goto single_subject_menu
+    scroll 10
+    goto main_menu
+    breaksw
+
+    case 4:
+    scroll 10
+    goto multiple_comparisons_menu
+    goto main_menu
+    breaksw
+
+    case 5:
+    scroll 10
+    goto postprocessing_utilities_menu
+    breaksw
+
+    case 6:
+    goto exit
+    breaksw
+
+    default:
+    goto exit
+    breaksw
+endsw
+
+
+# PREPROCESSING UTILITIES MENU
+preprocessing_utilities_menu:
+scroll 10
+echo "----- PRE-PROCESSING UTILITIES MENU -----"
+echo ""
+echo "(1)  Reconstruct EPI rawfiles using epi_recon, OLD naming convention"
+echo "(2)  Reconstruct EPI rawfiles using epi_recon, NEW naming convention"
+echo "(3)  Reconstruct EPI rawfiles using epi_recon, pre-formatted headerless data"
+echo "(4)  Reconstruct EPI rawfiles using skip4, Allen's reconstruction"
+echo "(5)  Make rough check on image data set for corrupt files"
+echo "(6)  Transform series of SIGNA files into ANALYZE images"
+echo "(7)  Transform series of SYSTEM V SIGNA files into ANALYZE images"
+echo "(8)  Transform series of ANALYZE image files into Mac format"
+echo "(9)  Transform Mac format files to ANALYZE format, OLD naming convention"
+echo "(10) Transform Mac format files to ANALYZE format, NEW naming convention"
+echo "(11) Register a series of 16-bit ANALYZE images, IN-PLANE"
+echo "     (For single-slice images.)"
+echo "(12) Register a series of 16-bit ANALYZE images, full 3D movement"
+echo "     (Woods code, using mean image as base image.)"
+echo "(13) Register a series of 16-bit ANALYZE images, full 3D movement"
+echo "     (Woods code, using one particular image as base image.)"
+echo "(14) Generate an 8-bit mask from a set of ANALYZE image volumes."
+echo "(15) Smooth series of ANALYZE images in 3D space (3D FFT)."
+echo "(16) Smooth series of ANALYZE images in 3D space and time (4D FFT)."
+echo "(17) Display fMRI time series."
+echo "(18) Return to Main Menu"
+echo "(19) Exit"
+preprocessing_utilities_menu_prompt:
+echo ""
+echo -n "Select an action (1-19): "
+set choice = $<
+switch ( "$choice" )
+    case 1:
+    epirecon_script
+    scroll 10
+    goto preprocessing_utilities_menu
+    breaksw
+
+    case 2:
+    epirecon_newnames_script
+    scroll 10
+    goto preprocessing_utilities_menu
+    breaksw
+
+    case 3:
+    epirecon_headerless_script
+    scroll 10
+    goto preprocessing_utilities_menu
+    breaksw
+
+    case 4:
+    skip4_script
+    scroll 10
+    goto preprocessing_utilities_menu
+    breaksw
+
+    case 5:
+    check_images_script
+    scroll 10
+    goto preprocessing_utilities_menu
+    breaksw
+
+    case 6:
+    signa2analyze4.series
+    scroll 10
+    goto preprocessing_utilities_menu
+    breaksw
+
+    case 7:
+    systemV2analyze_script
+    scroll 10
+    goto preprocessing_utilities_menu
+    breaksw
+
+    case 8:
+    anlz2mac_scriptB
+    scroll 10
+    goto preprocessing_utilities_menu
+    breaksw
+
+    case 9:
+    mac2anlz_script
+    scroll 10
+    goto preprocessing_utilities_menu
+    breaksw
+
+    case 10:
+    mac2anlz_scriptC
+    scroll 10
+    goto preprocessing_utilities_menu
+    breaksw
+
+    case 11:
+    registerINPLANE16bit
+    scroll 10
+    goto preprocessing_utilities_menu
+    breaksw
+
+    case 12:
+    alignpet2pet16_scriptC
+    scroll 10
+    goto preprocessing_utilities_menu
+    breaksw
+
+    case 13:
+    alignpet2pet16_scriptD
+    scroll 10
+    goto preprocessing_utilities_menu
+    breaksw
+
+    case 14:
+    make_mask_script
+    scroll 10
+    goto preprocessing_utilities_menu
+    breaksw
+
+    case 15:
+    convolve3D_script
+    scroll 10
+    goto preprocessing_utilities_menu
+    breaksw
+
+    case 16:
+    convolve4D_script
+    scroll 10
+    goto preprocessing_utilities_menu
+    breaksw
+
+    case 17:
+    dvt_script
+    scroll 10
+    goto preprocessing_utilities_menu
+    breaksw
+
+    case 18:
+    scroll 10
+    goto main_menu
+    breaksw
+
+    case 19:
+    goto exit
+    breaksw
+
+    default:
+    goto exit
+    breaksw
+endsw
+
+
+# SINGLE-SUBJECT ANALYSIS MENU
+single_subject_menu:
+scroll 10
+echo "----- SINGLE-SUBJECT ANALYSIS MENU -----"
+echo ""
+echo "(1)  paired t-test"
+echo "(2)  group t-test"
+echo "(3)  N-WAY ANOVA"
+echo "(4)  Estimate spatial smoothness of an image volume"
+echo "     using variance of spatial derivatives"
+echo "(5)  Estimate lambda and effective df in time series"
+echo "     Using method of Friston, Jezzard, & Turner"
+echo "(6)  Estimate effective df using resel approach"
+echo "     Worsley's resel method applied to temporal domain"
+echo "(7)  Correlational Analysis: Between Run, Within Voxel"
+echo "(8)  ANCOVA across runs with Poisson hemodynamic response function"
+echo "(9)  ANCOVA across runs with Gaussian hemodynamic response function"
+echo "(10) PCA"
+echo "(11) Time Series Analysis (1D temporal FFT)"
+echo "(12) Blob Mean Analysis"
+echo "(13) Voxel-wise estimation of lag and dispersion"
+echo "(14) Extract time series for voxels of interest"
+echo "(15) (Multivariate) Multiple Regression"
+echo "(16) (Multivariate) Multiple Regression, modified to allow input"
+echo "     stimuli not time-locked to the TR"
+echo "(17) Return to Main Menu"
+echo "(18) Exit"
+single_subject_prompt:
+echo ""
+echo -n "Select an action (1-18): "
+set choice = $<
+switch ( "$choice" )
+    case 1:
+    paired_t_script
+    scroll 10
+    goto single_subject_menu
+    breaksw
+
+    case 2:
+    fmri_group_tD_Script
+    scroll 10
+    goto single_subject_menu
+    breaksw
+
+    case 3:
+    ultra_anova_script
+    scroll 10
+    goto single_subject_menu
+    breaksw
+
+    case 4:
+    vardir2_script
+    scroll 10
+    goto single_subject_menu
+    breaksw
+
+    case 5:
+    fmri_lambda_v_script
+    scroll 10
+    goto single_subject_menu
+    breaksw
+
+    case 6:
+    fmri_df_script
+    scroll 10
+    goto single_subject_menu
+    breaksw
+
+    case 7:
+    corr_brwp_script
+    scroll 10
+    goto single_subject_menu
+    breaksw
+
+    case 8:
+    scroll 10
+    corr_idlrsp_script
+    scroll 10
+    goto single_subject_menu
+    breaksw
+
+    case 9:
+    scroll 10
+    corr_idlrspG_script
+    scroll 10
+    goto single_subject_menu
+    breaksw
+
+    case 10:
+    scroll 10
+    goto single_subject_menu
+    breaksw
+
+    case 11:
+    fmrifft_hann_script
+    scroll 10
+    goto single_subject_menu
+    breaksw
+
+    case 12:
+    blobmeans_scriptD
+    goto single_subject_menu
+    breaksw
+
+    case 13:
+    voxelwise_hemodynamics_script
+    scroll 10
+    goto single_subject_menu
+    breaksw
+
+    case 14:
+    extract_time_series_script
+    scroll 10
+    goto single_subject_menu
+    breaksw
+
+    case 15:
+    Dmultivar_multiple_regression_script
+    scroll 10
+    goto single_subject_menu
+    breaksw
+
+    case 16:
+    Dmultivar_multiple_regressionB_script
+    scroll 10
+    goto single_subject_menu
+    breaksw
+
+    case 17:
+    scroll 10
+    goto main_menu
+    breaksw
+
+    case 18:
+    goto exit
+    breaksw
+
+    default:
+    goto exit
+    breaksw
+endsw
+
+
+# MULTIPLE COMPARISONS MENU
+multiple_comparisons_menu:
+#scroll 10
+echo "----- STATISTICAL CONVERSIONS, AND CORRECTING FOR MULTIPLE COMPARISONS MENU -----"
+echo ""
+echo "(1) Convert F-test map to probability map"
+echo "(2) Convert F-test map to Z-score map"
+echo "(3) Convert t-test map to probability map"
+echo "(4) Convert t-test map to Z-score map"
+echo "(5) Convert Wilks' Lambda map to F-test and Z-score maps"
+echo "(6) Run Blobs Analysis on Z-score map"
+echo "    Connectivity: faces, edges, and corners"
+echo "(7) Run Blobs Analysis on Z-score map, MODIFIED CONNECTIVITY"
+echo "    Connectivity: faces and edges only"
+echo "(8) Return to Main Menu"
+echo "(9) Exit"
+multiple_comparisons_prompt:
+echo ""
+echo -n "Select an action (1-9): "
+set choice = $<
+switch ( "$choice" )
+    case 1:
+    F2prob_script
+    scroll 10
+    goto multiple_comparisons_menu
+    breaksw
+
+    case 2:
+    F2Z_script
+    scroll 10
+    goto multiple_comparisons_menu
+    breaksw
+
+    case 3:
+    t2prob_script
+    scroll 10
+    goto multiple_comparisons_menu
+    breaksw
+
+    case 4:
+    t2z3_script
+    scroll 10
+    goto multiple_comparisons_menu
+    breaksw
+
+    case 5:
+    wilks_lambda_p1_2Ffp_script
+    scroll 10
+    goto multiple_comparisons_menu
+    breaksw
+
+    case 6:
+    blobs_script
+    scroll 10
+    goto multiple_comparisons_menu
+    breaksw
+
+    case 7:
+    blobs_nocorners_script
+    scroll 10
+    goto multiple_comparisons_menu
+    breaksw
+
+    case 8:
+    scroll 10
+    goto main_menu
+    breaksw
+
+    case 9:
+    goto exit
+    breaksw
+
+    default:
+    goto exit
+    breaksw
+endsw
+
+# POST-PROCESSING UTILITIES MENU
+postprocessing_utilities_menu:
+#scroll 10
+echo "----- POST-PROCESSING UTILITIES MENU -----"
+echo ""
+echo "(1) Make RGB overlay map"
+echo "(2) Make RGB overlay map, with 4X zoom of fMRI"
+echo "    data to overlay on structural data"
+echo "(3) Return to Main Menu"
+echo "(4) Exit"
+postprocessing_utilities_menu:
+echo ""
+echo -n "Select an action (1-4): "
+set choice = $<
+switch ( "$choice" )
+    case 1:
+    RGBmap_script
+    scroll 10
+    goto postprocessing_utilities_menu
+    breaksw
+
+    case 2:
+    RGBmap_zoomX4_script
+    scroll 10
+    goto postprocessing_utilities_menu
+    breaksw
+
+    case 3:
+    scroll 10
+    goto main_menu
+    breaksw
+
+    case 4:
+    goto exit
+    breaksw
+
+    default:
+    goto exit
+    breaksw
+endsw
+
+
+exit:
+    echo bye bye
+    exit

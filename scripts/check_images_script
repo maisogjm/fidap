@@ -1,0 +1,134 @@
+#! /bin/csh -f
+# check_images_script
+# 07.25.96 by Jose' Ma. Maisog, M.D.
+# Laboratory of Psychology and Psychopathology,
+# National Institute of Mental Health
+
+# Shell script to do a rough check on an image data set to look
+# for corrupt data.  In short, correlates all image volumes with
+# a template volume.  Most correlations should be 0.8 or higher.
+# If any very low or zero correlations are found, suspect a
+# corrupt file.  Works on 8-bit, 16-bit, OR floating point data.
+
+# C executables called: correlate_images, 
+
+# QUERY USER FOR IMAGE DIRECTORY
+scroll 10
+echo  ""
+echo '******************************************************'
+echo  ""
+echo This script performs a rough but quick check for corrupt image data.
+echo Works on 8-bit, 16-bit, OR floating point data.
+echo ""
+echo -n "Please enter directory in which output text file is to be written: "
+set dir = $<
+while (! -d $dir)
+    echo Directory $dir does not exist.
+    echo ""
+    echo -n "Please enter directory in which floating point Z-score images are kept: "
+    set dir = $<
+end
+cd $dir
+touch fidap.log
+echo '******************************************************' >> fidap.log
+echo `date` " : " $user " : " check_images_script >> fidap.log
+
+
+# MAKE LIST OF IMAGES TO BE TESTED
+echo  ""
+echo '******************************************************'
+echo  ""
+echo Need root name of images to be tested.  This is the left-most
+echo string of characters in the image filenames which will match all
+echo of the images you wish to analyze, and ONLY those images.
+echo ""
+echo -n "  Root name of images to be analyzed? "
+set rootname = $<
+echo Rootname is $rootname >> fidap.log
+echo ""
+
+
+# QUERY USER FOR NAME OF ANALYZE .hdr FILE
+echo ""
+echo '******************************************************'
+echo  ""
+echo "Please enter the name of one of these ANALYZE header"
+echo "files which has the correct image dimensions for your"
+echo "images AND BITS PER PIXEL (including .hdr extension)."
+echo ""
+echo -n "  Header file (include .hdr extension)? "
+set hdrfile = $<
+while (! -e $hdrfile)
+    echo $hdrfile does not exist.
+    echo ""
+    echo -n "  Header file (include .hdr extension)? "
+    set hdrfile = $<
+end
+echo Header file is $hdrfile >> fidap.log
+echo ""
+
+
+# QUERY USER FOR TEMPLATE FILE
+echo ""
+echo '******************************************************'
+echo  ""
+echo Now enter the name of the template file.  This will be
+echo the file which all other files will be correlated against.
+echo For convenience you may use the first file, or perhaos
+echo a mean image.
+echo ""
+
+echo -n "  Template file (include .img extension)? "
+set template = $<
+while (! -e $template)
+    echo $template does not exist.
+    echo ""
+    echo -n "  Template file (include .img extension)? "
+    set template = $<
+end
+echo Template file is $template >> fidap.log
+echo ""
+
+
+# GET 8-BIT MASK
+echo ""
+echo '******************************************************'
+echo  ""
+echo You must now enter the name of an 8-bit mask.  The 8-bit mask
+echo must be of the same image dimensions as the image data, must
+echo be set to 1 in voxels which are to be included in the correlation,
+echo and must be zero everywhere else.  This 8-bit mask may have been
+echo generated from previous analyses in fidap\; or you may create
+echo one by thresholding an average image of the original experimental
+echo data images.
+echo ""
+echo -n "  8-bit mask file (include .img extension)? "
+set mask = $<
+while (! -e $mask)
+    echo $mask does not exist.
+    echo ""
+    echo -n "  8-bit mask file (include .img extension)? "
+    set mask = $<
+end
+echo Mask file is $mask >> fidap.log
+echo ""
+
+
+# QUERY USER FOR NAME OF OUTPUT TEXT FILE
+echo ""
+echo '******************************************************'
+echo  ""
+echo You must now enter the name for the output text file.
+echo Default is correlations.txt
+echo ""
+echo -n "Name for output text file {correlations.txt}? "
+set textfile = $<
+if ($textfile == "") then
+    set textfile = correlations.txt
+endif
+echo Output text file is $textfile >> fidap.log
+echo  ""
+echo  ""
+
+
+correlate_images $hdrfile $template $mask $textfile $rootname*.img

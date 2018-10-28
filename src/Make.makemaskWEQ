@@ -1,0 +1,4 @@
+makemaskWEQ: makemaskWEQ.o
+	$(CC) $(EXTRAS) makemaskWEQ.o -o makemaskWEQ -lm
+makemaskWEQ.o: makemaskWEQ.c
+	$(CC) $(EXTRAS) -c makemaskWEQ.c

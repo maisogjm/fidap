@@ -1,0 +1,108 @@
+#! /bin/csh -f
+# F2prob_script
+# 03.16.94 by Jose' Ma. Maisog, M.D.
+# Laboratory of Psychology and Psychopathology,
+# National Institute of Mental Health
+
+# Shell script to convert F-test maps to probability maps
+
+# C executables called: get_dims_from, F2prob, makeheader4, maxfp, minfp
+
+# QUERY USER FOR IMAGE DIRECTORY
+scroll 10
+echo  ""
+echo '******************************************************'
+echo  ""
+echo This script will convert floating point F-test maps to floating point
+echo probability maps.  The F-test maps must be floating point ANALYZE
+echo files and must have appropriate ANALYZE headers.  You must have read/write
+echo access to the directory in which the files are kept.
+echo ""
+echo -n "Please enter directory in which floating point F-test maps are kept: "
+set dir = $<
+while (! -d $dir)
+    echo Directory $dir does not exist.
+    echo ""
+    echo -n "Please enter directory in which floating point F-test maps are kept: "
+    set dir = $<
+end
+cd $dir
+touch fidap.log
+echo '******************************************************' >> fidap.log
+echo `date` " : " $user " : " F2prob_script >> fidap.log
+
+# MAKE LIST OF F IMAGES TO BE CONVERTED
+echo ""
+echo Here are the ANALYZE files found in this directory:
+ls *.img
+echo ""
+echo Need root name of maps to be converted.  This is the left-most
+echo string of characters in the image filenames which will match all
+echo of the maps you wish to slice, and ONLY those maps.
+echo ""
+echo -n "Type in root name of maps to be converted: "
+set rootname = $<
+echo ""
+set list = $rootname*.img
+echo These F-test maps are going to be converted to probability maps:
+echo $list
+echo ""
+echo They are assumed to already have ANALYZE headers.
+
+# GET DEGREES OF FREEDOM FOR EACH F-TEST IMAGE
+echo ""
+echo You will now have to type in the degrees of freedom for each
+echo F-test map.  Degrees of freedom may need to be corrected
+echo for spatial and/or temporal autocorrelations.
+echo ""
+set v1
+set v2
+set img_no = 1
+while ($img_no <= $#list)
+    echo -n "Numerator degrees of freedom v1 for $list[$img_no]? "
+    set v1 = ($v1 $<)
+    echo -n "Denominator degrees of freedom v2 for $list[$img_no]? "
+    set v2 = ($v2 $<)
+    echo ""
+    @ img_no++
+end
+
+# INFORMATION ABOUT OUTPUT IMAGE FILES
+echo ""
+echo F-test maps will be converted to floating point probability maps with
+echo naming convention
+echo ""
+echo "    P<filename>"
+echo ""
+echo "where <filename> is the name of the original F-test map."
+echo ""
+
+# CHECK WITH USER IF IT'S OKAY TO GO ON
+echo ""
+echo ""
+echo -n "Continue <y/n>? "
+set choice = $<
+if ($choice != "y") then
+    echo QUITTING SHELL SCRIPT....
+    sleep 2
+    exit
+endif
+
+# LOOP OVER ALL F-TEST IMAGES
+set img_no = 1
+while ($img_no <= $#list)
+    echo ""
+    echo Converting $list[$img_no] to P$list[$img_no]...
+
+    # CALL F2prob
+    F2prob $list[$img_no] $v1[$img_no] $v2[$img_no] P$list[$img_no]
+
+    # MAKE HEADER FOR PROBABILITY IMAGE
+    set max = `maxfp P$list[$img_no]`
+    set min = `minfp P$list[$img_no]`
+    set dims = `get_dims_from $list[$img_no]:r.hdr`
+    makeheader4 P$list[$img_no]:r.hdr $dims 1 32 $max $min $max $min 16
+
+    @ img_no++
+end
+

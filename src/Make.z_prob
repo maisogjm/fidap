@@ -1,0 +1,4 @@
+z_prob: z_prob.o
+	$(CC) $(EXTRAS) z_prob.o -o z_prob -lm
+z_prob.o: z_prob.c
+	$(CC) $(EXTRAS) -c z_prob.c

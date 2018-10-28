@@ -1,0 +1,87 @@
+####################################################################
+# Template input textfile for running 3D spatial smoothing routine.
+# You will need to modify this file to run on your own particular
+# data set.  Pound signs  "#" are comments.  Note that blank
+# lines without pound signs will be interpreted as carriage returns,
+# so don't include any blank lines unless you really mean to have
+# a carriage return.
+#
+####################################################################
+# Select Pre-processing Utilities Menu.
+2
+####################################################################
+# Select 3D Spatial Smoothing.
+15
+####################################################################
+# Here type in the name of the reference directory.
+# This is the directory from which the routine will be run.
+# If this is the current directory, you can use a "."
+# You can use absolute pathnames, e.g., /u4/data6/mri/raw_data
+.
+####################################################################
+# Input textfile containing names of files to be smoothed.
+# Filenames can be absolute or relative pathnames.
+# Smoothed files will be written into the same directory.
+# They will have the same names as the original files, but
+# with "S" prepended to the names.
+# Use the "wc -w" command to check the number of lines in this input
+# textfile.  E.g., running the command "wc -w input.txt" should
+# return the number of scans to be smoothed, no more, no less.
+input.txt
+####################################################################
+# ANALYZE header file.  Can be absolute or relative pathname.
+# In this example, we give an absolute pathname.
+/u1/work/Rr1_ctwm015.hdr
+####################################################################
+# 8-bit mask file (.img ANALYZE format file).
+mask_20_e.img
+####################################################################
+# At this point, user must type either a 1 or a 2.
+# If a pre-existing floating point map which contains a smoothing
+# kernel is to be used, user is to type in a 1.  Otherwise, a
+# Gaussian smoothing kernel will be created at runtime, and the
+# user must type in a 2.  Here, we assume the latter case, and
+# thus give a 2.
+2
+####################################################################
+# Since the Gaussian smoothing kernel is to be designed at run
+# time, user must specify the size of the smoothing filter along
+# each spatial axis.  Smoothing filter's size is specified in terms
+# of Full-Width at Half-Maximum (FWHM) of the Gaussian distribution.
+# FWHM is given in units of voxel lengths, not mm.  Thus, if you
+# desired a FWHM of 10 mm along the X axis, and voxels were of
+# length 2 mm along the X axis, this would be a FWHM of 5 voxel
+# lengths along the X axis.  In this example, we use smoothing of
+# FWHM = (1.5, 1.5, 0) along the XYZ axes.  0 FWHM along the Z
+# axis means no smoothing along that axis -- in-plane smoothing
+# only.
+1.5
+1.5
+0
+####################################################################
+# Number of zero slices to pad with.  Because of the use of the
+# FFT, the number of slices must be an integer power of 2.
+# Because the use of the Convolution Theorem results in a circular
+# convolution, padding with zero slices is desirable.
+# You can use the program Npad to calculate a suggested number.
+# For the first argument, give Npad the number of slices per
+# volume (zdim).  For the second argument, give the FWHM smoothing
+# along the Z-axis in terms of VOXEL LENGTHS.
+14
+####################################################################
+# Compression flag.  If you want the original files to be compressed
+# after smoothing, change the following "n" to a 'y".
+n
+####################################################################
+# Priority.  Here, give a number between 0 and 19 to set the priority.
+# 0 means default high priority, 19 means lowest priority.  During
+# regular workhours, consider using 19.
+19
+####################################################################
+# After the spatial smoothing is finished, you will be left at
+# the Pre-Processing Utilities Menu of fidap.  The following "19"
+# exits from fidap.  Of course, you can have fidap do other
+# procedures at this point.  For example, to return to the Main Menu,
+# and then go into the Single-Subject Analysis menu,
+# you'd have an "18" and a "3" (on separate lines) instead of a "19".
+19

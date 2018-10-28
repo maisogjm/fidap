@@ -1,0 +1,125 @@
+#! /bin/csh -f
+# make_mask_script
+# 11.15.96 by Jose' Ma. Maisog, M.D.
+# Laboratory of Psychology and Psychopathology,
+# National Institute of Mental Health
+
+#
+# Shell script to make an 8-bit mask from ANALYZE images.
+
+# C executables called: make_mask, makeheader4
+
+
+# QUERY USER FOR IMAGE DIRECTORY
+scroll 10
+echo  ""
+echo '******************************************************'
+echo  ""
+echo This script will generate an 8-bit binary mask from a set of
+echo ANALYZE image volumes, binary in the sense that voxels in the
+echo mask will be set to either 0 or 1.  The input image volumes must
+echo all be located in the same directory, and there must be at least
+echo one ANALYZE header .hdr file which contains the appropriate image
+echo dimension information.  You must have read/write access to the
+echo directory in which the images are kept.
+echo ""
+echo Input image volumes can be 8-bit or 16-bit integer, or single
+echo precision floating point.
+echo ""
+echo -n "Please enter directory for output mask file: "
+set dir = $<
+while (! -d $dir)
+    echo Directory $dir does not exist.
+    echo ""
+    echo -n "Please enter directory for output mask file: "
+    set dir = $<
+end
+cd $dir
+touch fidap.log
+echo '******************************************************' >> fidap.log
+echo `date` " : " $user " : " make_mask_script >> fidap.log
+
+
+# QUERY USER FOR NAME OF INPUT TEXT FILE
+echo  ""
+echo '******************************************************'
+echo  ""
+echo This script will generate an 8-bit mask from a set of ANALYZE
+echo image volumes.
+echo ""
+echo To run this script, you must first make a text file.
+echo ""
+echo This file should contain the names of the images, one per line
+set example = `which fmri_mask.txt`
+echo For an example, see the file $example
+echo ""
+echo ""
+echo -n "Type in name of text file: "
+set textfile = $<
+while (! -e $textfile)
+    echo $textfile does not exist.
+    echo ""
+    echo -n "Type in name of text file: "
+    set textfile = $<
+end
+echo $textfile >> fidap.log
+echo ""
+
+# QUERY USER FOR NAME OF ANALYZE .hdr FILE
+echo  ""
+echo '******************************************************'
+echo  ""
+set firstfile = `head -1 $textfile`
+echo Suggested header: $firstfile:r.hdr
+echo ""
+echo Please enter the name of an ANALYZE header file
+echo which has the correct image dimensions and bits per
+echo "pixel for your image volumes (including .hdr extension)."
+echo ""
+echo -n "  ANALYZE header file: "
+set hdrfile = $<
+while (! -e $hdrfile)
+    echo $hdrfile does not exist.
+    echo ""
+    echo -n "Type in name of header file file: "
+    set hdrfile = $<
+end
+echo $hdrfile >> fidap.log
+set dims = `get_dims_from $hdrfile`
+@ num_vox = $dims[1] * $dims[2] * $dims[3]
+echo ""
+echo Image volumes have dimensions $dims[1] x $dims[2] x $dims[3]
+echo Image volumes have total of $num_vox voxels each.
+
+
+# QUERY USER FOR DESIRED THRESHOLD FOR MAKING MASK
+echo  ""
+echo '******************************************************'
+echo  ""
+echo It is assumed that the input scans are registered.  A mean
+echo scan will be calculated.  A mask will be made from this mean
+echo scan by thresholding it.  Below, you will need to specify the
+echo number T.  All voxels in the mean image which have pixel
+echo intensity T % the maximum voxel intensity in the mean image or
+echo greater will be set to 1 in the mask.
+echo E.g., if you want a 10 % threshold, type in \<10\>.
+echo This mask will be used to calculate the global mean
+echo intensities of the individual scans.
+echo ""
+echo -n "ENTER the threshold T for the mask: "
+set mask_thresh = $<
+echo $mask_thresh >> fidap.log
+echo "" >> fidap.log
+echo ""
+echo The mask will be written to mask_$mask_thresh.img
+echo ""
+
+
+# CALL make_mask:
+echo make_mask $hdrfile $textfile $mask_thresh >> fidap.log
+make_mask $hdrfile $textfile $mask_thresh
+
+# MAKE HEADER FOR MASK IMAGE
+makeheader4 mask_$mask_thresh.hdr $dims 1 8 1 0 1 0 2
+
+exit

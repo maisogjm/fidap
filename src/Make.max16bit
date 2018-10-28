@@ -1,0 +1,4 @@
+max16bit: max16bit.o
+	$(CC) $(EXTRAS) max16bit.o -o max16bit
+max16bit.o: max16bit.c
+	$(CC) $(EXTRAS) -c max16bit.c

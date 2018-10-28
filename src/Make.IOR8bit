@@ -1,0 +1,6 @@
+IOR8bit: IOR8bit.o imgio.o
+	$(CC) $(EXTRAS) IOR8bit.o imgio.o -o IOR8bit
+IOR8bit.o: IOR8bit.c
+	$(CC) $(EXTRAS) -c IOR8bit.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

@@ -1,0 +1,159 @@
+#!/bin/csh -f
+# extract_time_series_script
+# 04.22.96 by Jose' Ma. Maisog, M.D.
+# Laboratory of Psychology and Psychopathology,
+# National Institute of Mental Health
+
+#
+# Shell script to extract time series from multirun 16-bit
+# data set.
+
+# C executables called: get_dims_from, az2vox_index, extract_time_series
+
+# Query user for directory
+scroll 10
+echo  ""
+echo '******************************************************'
+echo  ""
+echo -n "Enter the name of the directory containing data files: "
+set dir = $<
+while (! -d $dir)
+    echo Directory $dir does not exist.
+    echo ""
+    echo -n "Enter the name of the directory containing data files: "
+    set dir = $<
+end
+cd $dir
+touch fidap.log
+echo '******************************************************' >> fidap.log
+echo `date` " : " $user " : " extract_time_series_script >> fidap.log
+echo "The following lines are EXACTLY as you've typed them into the script:" >> fidap.log
+
+# Query user for header file.
+echo  ""
+echo '******************************************************'
+echo  ""
+echo "Enter the name of a header file which will be used to determine"
+echo "the XYZ dimensions of the image volume."
+echo ""
+echo -n "Name of header file (including .hdr extension)? "
+set header = $<
+while(! -e $header)
+    echo File $header does not exist.
+    echo ""
+    echo -n "Name of header file (including .hdr extension)? "
+    set header = $<
+end
+echo $header >> fidap.log
+set dims = `get_dims_from $header`
+
+# Query user for 8-bit mask.
+echo  ""
+echo '******************************************************'
+echo  ""
+echo -n "Name of 8-bit mask file (including .img extension)? "
+set mask = $<
+while(! -e $mask)
+    echo File $mask does not exist.
+    echo ""
+    echo -n "Name of 8-bit mask file (including .img extension)? "
+    set mask = $<
+end
+echo $mask >> fidap.log
+
+# Query user for input text files.
+echo  ""
+echo '******************************************************'
+echo ""
+echo The input textfile of file names should contain the names of the
+echo fMRI image volume files, one name per line.  If you have more
+echo than one fMRI run, just list all the files for the first run,
+echo then list all the files for the second run, etc., all in the
+echo same text file, one name per line.
+echo ""
+echo -n "Input text file containing names of 16-bit image volumes? "
+set name_textfile = $<
+while(! -e $name_textfile)
+    echo File $name_textfile does not exist.
+    echo ""
+    echo -n "Input text file containing names of 16-bit image volumes? "
+    set name_textfile = $<
+end
+echo $name_textfile >> fidap.log
+
+
+echo  ""
+echo '******************************************************'
+echo ""
+echo -n "Number of runs? "
+set num_runs = $<
+echo $num_runs >> fidap.log
+echo -n "Number of scans (timepoints) per run? "
+set num_dat_pts = $<
+echo $num_dat_pts >> fidap.log
+
+# Query user for voxels of interest
+echo  ""
+echo '******************************************************'
+echo ""
+echo This script will output the time series for an arbitrary
+echo number of voxels of interest.
+echo ""
+echo -n "How many voxels of interest? "
+set num_vox_int = $<
+echo $num_vox_int >> fidap.log
+echo ""
+set voxels_of_int
+set index = 1
+#echo Voxels of interest: >> fidap.log
+while ($index <= $num_vox_int)
+    echo ""
+    echo "Voxel of interest #${index}:"
+    echo -n "    X-coordinate? "
+    set X = $<
+    echo $X >> fidap.log
+    echo -n "    Y-coordinate? "
+    set Y = $<
+    echo $Y >> fidap.log
+    echo -n "    Z-coordinate? "
+    set Z = $<
+    echo $Z >> fidap.log
+    set vox_index = `az2vox_index $X $Y $Z $dims[1-3]`
+    set voxels_of_int = ($voxels_of_int $vox_index)
+    echo "    Coordinates [ $X $Y $Z ] = voxel index $vox_index"
+    # echo "    Coordinates [ $X $Y $Z ] = voxel index $vox_index" >> fidap.log
+    echo "    Output to be written to voxel_${X}_${Y}_${Z}.dat"
+    @ index ++
+end
+echo ""
+echo ""
+
+echo ""
+echo '******************************************************'
+echo ""
+echo Finally, you must type in a number between 0 and 19.
+echo The \'nice\' command will use this number to adjust
+echo the priority of this process.  \'0\' will result in
+echo the default priority being used.  Higher numbers will
+echo result in lower priorities.  We recommend \'0\' to be
+echo used during off hours, and higher \(nicer\) numbers to
+echo be used during regular work hours.
+echo ""
+echo -n "Priority adjustment number? "
+set priority = $<
+if ($priority == "") then
+    set priority = 0
+endif
+echo $priority >> fidap.log
+echo "" >> fidap.log
+
+
+# Call extract_time_series
+echo nice -$priority extract_time_series $header $name_textfile $num_runs $num_dat_pts \
+	$mask $voxels_of_int
+echo nice -$priority extract_time_series $header $name_textfile $num_runs $num_dat_pts \
+	$mask $voxels_of_int >> fidap.log
+nice -$priority extract_time_series $header $name_textfile $num_runs $num_dat_pts \
+	$mask $voxels_of_int << EOF
+y
+EOF

@@ -1,0 +1,6 @@
+make_triangle_palette: make_triangle_palette.o imgio.o
+	$(CC) $(EXTRAS) make_triangle_palette.o imgio.o -o make_triangle_palette -lm
+make_triangle_palette.o: make_triangle_palette.c
+	$(CC) $(EXTRAS) -c make_triangle_palette.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

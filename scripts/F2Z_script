@@ -1,0 +1,203 @@
+#! /bin/csh -f
+# F2Z_script
+# 10.28.96 by Jose' Ma. Maisog, M.D.
+# Laboratory of Psychology and Psychopathology,
+# National Institute of Mental Health
+
+# C executables called: get_dims_from,
+# maxfp, minfp, makeheader4, F2Z, F2Z3, sgnFP, multFP2
+
+# Also calls the C shell script fp2byte_script
+#
+
+touch fidap.log
+scroll 10
+echo  ""
+echo '******************************************************'
+echo  ""
+echo  Shell script to convert an F-test map to a Z-score map.
+echo ""
+echo If the numerator degrees of freedom of the F-test is equal
+echo to 1, the square root of the F-tests gives unsigned t-tests.
+echo The t-tests can be given proper signs by examining the signs
+echo in the regression coefficient map.  Then, an approximate
+echo method described by E.T. Federighi will be used to convert
+echo the t-tests to Z-scores. In this case, large negative values
+echo in the resulting Z-score map will represent significant
+echo \"deactivations\".  These Z-score maps will have the same
+echo name as the F-test maps, but will with \"Z\" prepended
+echo to the name.  Note capital \"Z\".
+echo ""
+echo If the numerator df is NOT equal to 1, an approximate method
+echo described by E. Paulson will be used to directly convert
+echo F-tests to Z-scores. Large negative values in the resulting
+echo Z-score map will represent very low values of the F-test,
+echo i.e., NON-significant findings.  These Z-score maps will
+echo have the same name as the F-test maps, but with
+echo with \"z\" prepended to the name.  Note small \"z\".
+echo ""
+echo  Both the F-test map and the Z-score map are then converted
+echo  to byte format for viewing in ANALYZE.
+echo ""
+echo References:
+echo ""
+echo Federighi, E.T., \"Extended tables of the percentage points
+echo of Student\'s t-distribution\" J. Am. Stat. Assoc.,
+echo 54, 683-688 \(1959\).
+echo ""
+echo Paulson E, \"An approximate normalization of the Analysis
+echo of Variance distribution,\" Ann Math Statist 13:233-235 \(1942\).
+echo ""
+
+# Query user for directory
+echo  ""
+echo '******************************************************'
+echo  ""
+echo -n "Enter the name of the directory containing data files: "
+set dir = $<
+while (! -d $dir)
+    echo Directory $dir does not exist.
+    echo ""
+    echo -n "Enter the name of the directory containing data files: "
+    set dir = $<
+end
+cd $dir
+touch fidap.log
+echo '******************************************************' >> fidap.log
+echo `date` " : " $user " : " F2Z_script >> fidap.log
+
+echo  ""
+echo '******************************************************'
+echo  ""
+echo -n "Name of F-test map? "
+set F_test_map = $<
+while ((! -e $F_test_map) || (! -e $F_test_map:r.hdr))
+    if (! -e $F_test_map) then
+        echo File $F_test_map does not exist.
+        echo ""
+        echo -n "Name of F-test map? "
+        set F_test_map = $<
+    endif
+    if (! -e $F_test_map:r.hdr) then
+        echo File $F_test_map:r.hdr does not exist.
+        echo Cannot convert $F_test_map to Z-score map.
+        exit
+    endif
+end
+echo F-test map is $F_test_map >> fidap.log
+set dims = `get_dims_from $F_test_map:r.hdr`
+echo ""
+echo -n "Numerator degrees of freedom? "
+set v1 = $<
+echo nu-H is $v1 >> fidap.log
+echo ""
+echo -n "Effective denominator df for F-test? "
+set v2 = $<
+echo Effective denominator df for F-test is $v2 >> fidap.log
+
+
+# QUERY USER FOR SCALING FACTOR FOR F-TEST MAPS
+echo ""
+echo '******************************************************'
+echo  ""
+echo F-test maps may be scaled by a multiplicative floating point
+echo number.  If you want no scaling, indicate a \"1\" for the scaling
+echo factor.
+echo ""
+echo Scaling may be necessary if you\'re adjusting degrees of freedom.
+echo If the denominator df was B before adjustment and A after adjustment,
+echo the scaling factor for the F-test would also be \(A \/ B\),
+echo A divided by B.
+echo ""
+echo -n "Scaling factor for F-test maps? "
+set scale_factor = $<
+echo Scale factor of $scale_factor will be applied to F-tests.  >> fidap.log
+
+
+if ( $v1 == 1) then
+    echo ""
+    echo '******************************************************'
+    echo  ""
+    echo Since the numerator df of the F-test is equal to 1, the
+    echo F-test map can be converted to a Z-score map in which
+    echo directionality of \"activation\" can be assigned.  Thus,
+    echo very large positive Z-scores therefore will represent
+    echo significant "activations" with respect to the effect of
+    echo interest, and very large negative Z-scores will represent
+    echo significant \"deactivations\" with respect to the effect
+    echo of interest.  A capital \"Z\" will be used in the name
+    echo of this Z-score map file.
+    echo ""
+    echo Now you must enter the name of a floating point map from
+    echo which the sign will be determined.  If negative voxels
+    echo are found in this map, the corresponding voxels in the
+    echo Z-score map will be assigned negative signs.  If you have
+    echo performed a multiple regression, you can use the
+    echo corresponding FLOATING POINT B_hat regression coefficient
+    echo map.  If you have performed an ANOVA, you can use the
+    echo difference between two mean maps \(means of levels within
+    echo factors\).  If you are using a \"signed\" F-test map, you
+    echo can use the F-test map itself as the sign map.
+    echo ""
+    echo Include the .img extension.
+    echo ""
+    echo -n "Sign map (including .img extension)? "
+    set b_hat = $<
+    while (! -e $b_hat)
+        echo ""
+        echo File $b_hat does not exist.
+        echo -n "Regression coefficient map? "
+        set b_hat = $<
+    end
+    echo Regression coefficient map is $b_hat >> fidap.log
+    echo ""
+    # Generate signed F-test map from F-test map and regression
+    # coefficient map.
+    echo Creating Z-score map Z$F_test_map...
+    echo F2Z $F_test_map $v1 $v2 $scale_factor Z$F_test_map $b_hat
+    echo F2Z $F_test_map $v1 $v2 $scale_factor Z$F_test_map $b_hat >> fidap.log
+    F2Z $F_test_map $v1 $v2 $scale_factor Z$F_test_map $b_hat
+    multFP2 Z$F_test_map -1 IZ$F_test_map | grep writing
+    foreach file (Z$F_test_map IZ$F_test_map)
+        set max = `maxfp Z$F_test_map`
+        set min = `minfp Z$F_test_map`
+        makeheader4 $file:r.hdr $dims 1 32 255 0 $max $min 16 1
+    end
+    echo  ""
+    echo '******************************************************'
+    echo  ""
+    echo Converting $F_test_map, Z$F_test_map, and IZ$F_test_map to byte format...
+    fp2byte_script $F_test_map Z$F_test_map IZ$F_test_map
+
+else
+    echo ""
+    echo '******************************************************'
+    echo  ""
+    echo Since the numerator df of the F-test is greater than 1,
+    echo large F-tests will map onto large positive Z-scores only.
+    echo Very large positive Z-scores therefore will represent
+    echo significant findings, but no directionality can be
+    echo assigned to them.  Very large negative Z-scores will
+    echo represent NON-significant voxels, NOT significant
+    echo \"deactivations.\" A small\"z\" will be used in the
+    echo name of this Z-score map file.
+    echo ""
+    # Create F-test using Paulson's approximate method.
+    echo Creating Z-score map z$F_test_map...
+
+    # CALL F2Z
+    echo F2Z $F_test_map $v1 $v2 $scale_factor z$F_test_map
+    echo F2Z $F_test_map $v1 $v2 $scale_factor z$F_test_map >> fidap.log
+    F2Z $F_test_map $v1 $v2 $scale_factor z$F_test_map
+
+    set max = `maxfp z$F_test_map`
+    set min = `minfp z$F_test_map`
+    makeheader4 z$F_test_map:r.hdr $dims 1 32 255 0 $max $min 16 1
+    echo  ""
+    echo '******************************************************'
+    echo  ""
+    echo Converting $F_test_map and z$F_test_map to byte format...
+    fp2byte_script $F_test_map z$F_test_map
+    echo  ""
+endif
+echo All done!

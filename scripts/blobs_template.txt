@@ -1,0 +1,59 @@
+####################################################################
+# Template input textfile for performing blobs analysis.
+# You will need to modify this file to run on your own particular
+# data set.  Pound signs  "#" are comments.  Note that blank
+# lines without pound signs will be interpreted as carriage returns,
+# so don't include any blank lines unless you really mean to have
+# a carriage return.
+#
+####################################################################
+# Select Statistical Conversions and Correcting for Multiple Comparisons Menu
+4
+####################################################################
+# Select Convert Wilks' Lambda map to F-test and Z-score maps
+6
+####################################################################
+# Here type in the name of the output directory.
+# If this is the current directory, you can use a "."
+# You can use absolute pathnames, e.g., /u4/data6/mri/raw_data
+.
+####################################################################
+# Root name of Z-score maps to be analyzed.
+ZFwilks*int
+####################################################################
+# Is this data spatially normalized <y/n>?
+n
+####################################################################
+# Do you want to enter CALCULATED FWHM's <y/n>?
+# If so, change the following "n" to "y".
+n
+####################################################################
+# Do you want to enter your own estimate of W <y/n>?
+# If not, you will need to change the following "y" to an "n"
+# and comment out the following "0.541533"
+y
+####################################################################
+# Estimate of W.
+0.541533
+####################################################################
+# 8-bit mask file (.img ANALYZE format file).
+mask_20.img
+####################################################################
+# Z-score threshold.  Variable "u" in the original paper by
+# Friston, Worsley, et al.
+2.33
+####################################################################
+# Signficance threshold for clusters.
+0.05
+####################################################################
+# Continue <y/n>?
+y
+####################################################################
+# After the blobs analysis is finished, you will be left at
+# the Statistical Conversions, and Correcting For Multiple Comparisons
+# Menu of fidap.  The following "9" exits gracefully from fidap.
+# Of course, you can have fidap do other procedures at this point.
+# For example, to return to the Main Menu, and then go into the menu
+# for Post-processing Utilities, you'd have a "8" and a "5"
+# (on separate lines) instead of a "9".
+9

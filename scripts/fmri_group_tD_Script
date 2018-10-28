@@ -1,0 +1,348 @@
+#! /bin/csh -f
+# fmri_group_tDC_Script
+# 04.02.95 by Jose' Ma. Maisog, M.D.
+# Laboratory of Psychology and Psychopathology,
+# National Institute of Mental Health
+
+#
+# Shell script to perform a group t-test on 16-bit ANALYZE images.
+
+# C executables called: fmri_group_tD, maxfp, minfp, get_dims_from,
+#                       makeheader4, fp2word2, max16bit2, min16bit2
+# C shell scripts called: scroll, fp2byte_script
+
+# SAVE CURRENT WORKING DIRECTORY FOR LATER USE
+set startdir = $cwd
+
+# QUERY USER FOR IMAGE DIRECTORY
+scroll 10
+echo  ""
+echo '******************************************************'
+echo  ""
+echo  This script will perform a group t-test on a set of 16-bit
+echo ANALYZE images.  The images must all be located in the
+echo same directory, and there must be at least one ANALYZE
+echo header .hdr file which contains the appropriate image
+echo dimension information.  You must have read/write access
+echo to the directory in which the images are kept.
+echo ""
+echo -n "Please enter directory in which 16-bit ANALYZE images are kept: "
+set dir = $<
+while (! -d $dir)
+    echo Directory $dir does not exist.
+    echo ""
+    echo -n "Please enter directory in which 16-bit ANALYZE images are kept: "
+    set dir = $<
+end
+cd $dir
+touch fidap.log
+echo '******************************************************' >> fidap.log
+echo `date` " : " $user " : " fmri_group_tD_Script >> fidap.log
+
+# SHOW USER CONTENTS OF IMAGE DIRECTORY
+echo  ""
+echo '******************************************************'
+echo  ""
+set filelist = `\ls *.img`
+set numANLZfiles = $#filelist
+echo There are $numANLZfiles ANALYZE images in ${dir}:
+\ls *.img
+echo ""
+echo -n Press Return to continue...
+set dummy = $<
+
+# QUERY USER FOR NAME OF INPUT TEXT FILE, IF IT ALREADY EXISTS
+echo  ""
+echo '******************************************************'
+echo  ""
+echo This script will perform a comparison between two groups of images.
+echo The two groups of images don\'t necessarily have to have the same
+echo number of images.
+echo ""
+echo To run this script, you must first make two text files.
+echo ""
+echo The first file should contain the names of the images in the first group,
+echo and the second should contain the names of the images in the second group,
+echo "one .img filename per line.  Following the name of each file you must"
+echo place a number which will be used to weight the global mean intensities
+echo "of the images when ratio-adjusting the images' global means (eg, '1')."
+echo ""
+echo -n Press Return to continue...
+set dummy = $<
+echo""
+set example = `which groupt1.txt`
+echo For example:
+echo ""
+more $example
+echo ""
+echo If these text files don\'t yet exist, you can create them using a text editor
+echo \(eg, vi, emacs, or ez\), or you can create them via this script.
+echo Note that the contrast will be group 2 minus group 1, not the other way
+echo around.
+echo ""
+echo CHOICES:
+echo "  (1) The two text files are already made."
+echo "      Continue with this script."
+echo "  (2) Make the two text files now, using either"
+echo "      vi, emacs, or ez."
+echo "  (3) Create the two text files by directly typing"
+echo "      in the filenames via this script."
+echo "  (4) Exit this script, and make the two text files"
+echo "      (using, eg,  vi, emacs, or ez).  After they are"
+echo "      created you must return to this script."
+echo ""
+echo -n " CHOOSE ACTION: "
+set choice = $<
+while ($choice != "1" && $choice != "2" && $choice != "3" && $choice != "4")
+    echo -n " CHOOSE ACTION: "
+    set choice = $<
+end
+
+switch ($choice)
+    # TWO TEXT FILES ALREADY MADE.
+    case 1:
+    echo ""
+    echo -n "Type in name of group 1 text file: "
+    set name1 = $<
+    while (! -e $name1)
+        echo $name1 does not exist.
+        echo ""
+        echo -n "Type in name of group 1 text file: "
+        set name1 = $<
+    end
+    echo ""
+    echo -n "Type in name of group 2 text file: "
+    set name2 = $<
+    while (! -e $name2)
+        echo $name2 does not exist.
+        echo ""
+        echo -n "Type in name of group 2 text file: "
+        set name2 = $<
+    end
+    goto two_textfiles_made
+    breaksw
+
+    # MAKE THE TWO TEXT FILES VIA THIS SCRIPT
+    case 2:
+    echo ""
+    echo -n "Type in desired name for group 1 text file: "
+    set name1 = $<
+    echo ""
+    echo -n "Type in desired name for group 2 text file: "
+    set name2 = $<
+    echo ""
+    echo -n "Type in desired editor (eg, "vi" or "emacs"): "
+    set editor = $<
+    echo ""
+    echo ""
+    echo Now entering the editor $editor, creating file $name1.
+    echo In this file you must put the names of the images
+    echo in group 1, one name per line.  After each image name
+    echo you must place a number which will be used to weight the
+    echo images when ratio-adjusting the global mean intensities.
+    echo -n Type Return when ready...
+    set dummy = $<
+    echo ""
+    eval `echo $editor $name1`
+    echo ""
+    echo ""
+    echo Now entering the editor $editor, creating file $name2.
+    echo In this file you must put the names of the images
+    echo in group 2, one name per line.  After each image name
+    echo you must place a number which will be used to weight the
+    echo images when ratio-adjusting the global mean intensities.
+    echo -n Type Return when ready...
+    set dummy = $<
+    echo ""
+    eval `echo $editor $name2`
+    breaksw
+
+    # MAKE THE TWO TEXT FILES VIA THIS SCRIPT
+    case 3:
+    echo ""
+    echo -n "Type in desired name for group 1 text file: "
+    set name1 = $<
+    echo ""
+    echo -n "Type in desired name for group 2 text file: "
+    set name2 = $<
+    echo ""
+    echo ""
+    echo I shall now create the file $name1.  You must now type in
+    echo "the names of the images in group 1, one name per line.  After"
+    echo each image name you must place a number which will be used to
+    echo weight the images when ratio-adjusting the global mean
+    echo "intensities.  End EACH line with a carriage return."
+    echo After the last carriage return, type a \<Control-D\>.
+    echo ""
+    cat > $name1
+    echo ""
+    echo ""
+    echo I shall now create the file $name2.  You must now type in
+    echo "the names of the images in group 2, one name per line.  After"
+    echo each image name you must place a number which will be used to
+    echo weight the images when ratio-adjusting the global mean
+    echo "intensities.  End EACH line with a carriage return."
+    echo After the last carriage return, type a \<Control-D\>.
+    echo ""
+    cat > $name2
+    breaksw
+
+    # EXIT SCRIPT, MAKE THE TWO TEXT FILES, AND THEN RETURN TO THIS SCRIPT.
+    case 4:
+    echo You have chosen to exit this script.  You must now create the
+    echo two text files.  The first file should contain the names of the
+    echo images in the first group, and the second should contain the names
+    echo of the images in the second group, one .img filename per line.
+    echo Then re-run this script.
+    echo -n Type Return when ready...
+    set dummy = $<
+    exit
+    breaksw
+
+endsw
+
+echo Group 1 text file is $name1 >> fidap.log
+echo Group 2 text file is $name2 >> fidap.log
+
+two_textfiles_made:
+# QUERY USER FOR NAME OF ANALYZE .hdr FILE
+echo  ""
+echo '******************************************************'
+echo  ""
+echo Here are the ANALYZE header files in ${dir}:
+\ls *.hdr
+echo ""
+echo "Please enter the name of one of these ANALYZE header"
+echo "files which has the correct image dimensions for your"
+echo -n "images (including .hdr extension): "
+set hdrfile = $<
+while (! -e $hdrfile)
+    echo $hdrfile does not exist.
+    echo ""
+    echo -n "Type in name of header file file: "
+    set hdrfile = $<
+end
+set dims = `get_dims_from $hdrfile`
+@ num_vox = $dims[1] * $dims[2] * $dims[3]
+echo Header file is $hdrfile >> fidap.log
+
+# QUERY USER FOR NAME OF MASK IMAGE
+echo  ""
+echo '******************************************************'
+echo  ""
+echo You must now enter the name of the 8-bit mask image file.
+echo This 8-bit mask will determine brain versus non-brain.
+echo A value of 1 indicates brain, a value of 0 indicates non-brain.
+echo Obviously, calculations will be done only on indicated brain voxels.
+echo ""
+echo -n "ENTER the name of the maskfile: "
+set maskfile = $<
+echo ""
+echo $maskfile will be used as the maskfile.
+echo $maskfile will be used as the maskfile. >> fidap.log
+echo ""
+
+# QUERY USER FOR DESIRED NAME FOR t MAP
+echo  ""
+echo '******************************************************'
+echo  ""
+echo "The t map will be written to a floating point ANALYZE .img file."
+echo "Please enter the desired name of the .img file,"
+echo -n "including .img extension: "
+set tfile = $<
+echo $tfile will be the T-test map. >> fidap.log
+
+# QUERY USER FOR DESIRED NAME FOR DIFFERENCE OF MEANS IMAGE
+echo  ""
+echo '******************************************************'
+echo  ""
+echo "The difference of the group means will be written to a"
+echo "floating point ANALYZE .img file."
+echo "Please enter the desired name of the .img file,"
+echo -n "including .img extension: "
+set diffile = $<
+echo $diffile will be the difference map. >> fidap.log
+
+# QUERY USER FOR COORDINATES OF VOXEL OF INTEREST
+echo  ""
+echo '******************************************************'
+echo  ""
+echo In addition to the t image and the difference image,
+echo a text file containing the t-test for one voxel in the
+echo image will be generated.  It will have a name like
+echo \"group_t_test_X_Y_Z.txt,\" where XYZ are the xyz coordinates
+echo of the voxel of interest.
+echo ""
+echo -n "  X-coordinate of voxel of interest: "
+set x_int = $<
+echo -n "  Y-coordinate of voxel of interest: "
+set y_int = $<
+echo -n "  Z-coordinate of voxel of interest: "
+set z_int = $<
+@ vox_index_int = ((($z_int - 1) * $dims[2]) + $y_int - 1) * $dims[1] + $x_int - 1
+while (($vox_index_int < 0) || ($vox_index_int > $num_vox - 1))
+    echo Bad coordinates, given image dimensions in $hdrfile.
+    echo ""
+    echo -n "  X-coordinate of voxel of interest: "
+    set x_int = $<
+    echo -n "  Y-coordinate of voxel of interest: "
+    set y_int = $<
+    echo -n "  Z-coordinate of voxel of interest: "
+    set z_int = $<
+    @ vox_index_int = ((($z_int - 1) * $dims[2]) + $y_int - 1) * $dims[1] + $x_int
+ - 1
+end
+echo ""
+echo The output text file will be written to group_t_test_${x_int}_${y_int}_$z_int.txt
+echo The output text file will be written to group_t_test_${x_int}_${y_int}_$z_int.txt >> fidap.log
+
+# QUERY USER WHETHER A SCALED 16-BIT IMAGE IS DESIRED
+
+eco  ""
+echo '******************************************************'
+echo  ""o If you wish, a scaled 16-bit image of the t map
+echo can be generated.  This image will be scaled by a factor
+echo of 1000.  Thus, a t of 1.672 will have a 16-bit
+echo value of 1672.  This can be useful if you are doing
+echo pixel sampling within ANALYZE.  The drawback is that
+echo 16-bit images are fairly large.
+echo ""
+echo -n "Do you want scaled 16-bit images <y/n>? "
+set scaled_imgs = $<
+
+# CHECK WITH USER IF IT'S OKAY TO GO ON
+echo ""
+echo -n "Continue <y/n>? "
+set choice = $<
+if ($choice != "y") then
+    echo QUITTING SHELL SCRIPT....
+    sleep 2
+    exit
+endif
+
+# CALL fmri_group_tD:
+echo fmri_group_tD $hdrfile $maskfile $name1 $name2 $tfile $diffile $x_int $y_int $z_int
+echo fmri_group_tD $hdrfile $maskfile $name1 $name2 $tfile $diffile $x_int $y_int $z_int >> fidap.log
+fmri_group_tD $hdrfile $maskfile $name1 $name2 $tfile $diffile $x_int $y_int $z_int
+
+# MAKE HEADERS FOR T-TEST OUTPUT, CONVERT TO BYTE IMAGES
+foreach file($tfile $diffile)
+    set imgmax = `maxfp $file`
+    set imgmin = `minfp $file`
+    makeheader4 $file:r.hdr $dims 1 32 $imgmax $imgmin $imgmax $imgmin 16
+end
+fp2byte_script $tfile
+fp2byte_script $diffile
+
+# GENERATE SCALED 16-BIT IMAGES IF DESIRED
+if ($scaled_imgs == "y") then
+    foreach file($tfile $diffile)
+        fp2word2 $file W$file $dims[1-3] 1000
+        set max = `max16bit2 W$file:r.img`
+        set min = `min16bit2 W$file:r.img`
+        makeheader4 W$file:r.hdr $dims 1 16 $max $min $max $min 4
+    end
+endif
+
+exit
+

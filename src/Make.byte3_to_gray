@@ -1,0 +1,6 @@
+byte3_to_gray: byte3_to_gray.o imgio.o
+	$(CC) $(EXTRAS) byte3_to_gray.o imgio.o -o byte3_to_gray
+byte3_to_gray.o: byte3_to_gray.c
+	$(CC) $(EXTRAS) -c byte3_to_gray.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

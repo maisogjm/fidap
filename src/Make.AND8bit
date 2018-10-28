@@ -1,0 +1,6 @@
+AND8bit: AND8bit.o imgio.o
+	$(CC) $(EXTRAS) AND8bit.o imgio.o -o AND8bit
+AND8bit.o: AND8bit.c
+	$(CC) $(EXTRAS) -c AND8bit.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

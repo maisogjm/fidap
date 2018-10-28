@@ -1,0 +1,4 @@
+min16bit2: min16bit2.o
+	$(CC) $(EXTRAS) min16bit2.o -o min16bit2
+min16bit2.o: min16bit2.c
+	$(CC) $(EXTRAS) -c min16bit2.c

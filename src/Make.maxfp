@@ -1,0 +1,4 @@
+maxfp: maxfp.o
+	$(CC) $(EXTRAS) maxfp.o -o maxfp
+maxfp.o: maxfp.c
+	$(CC) $(EXTRAS) -c maxfp.c

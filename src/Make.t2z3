@@ -1,0 +1,14 @@
+t2z3: t2z3.o betai.o nrutil.o betacf.o gammln.o imgio.o
+	$(CC) $(EXTRAS) t2z3.o betai.o nrutil.o betacf.o gammln.o imgio.o -o t2z3 -lm
+t2z3.o: t2z3.c
+	$(CC) $(EXTRAS) -c t2z3.c
+gammln.o: gammln.c
+	$(CC) $(EXTRAS) -c gammln.c
+betai.o: betai.c
+	$(CC) $(EXTRAS) -c betai.c
+nrutil.o: nrutil.c
+	$(CC) $(EXTRAS) -c nrutil.c
+betacf.o: betacf.c
+	$(CC) $(EXTRAS) -c betacf.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

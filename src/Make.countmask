@@ -1,0 +1,4 @@
+countmask: countmask.o
+	$(CC) $(EXTRAS) countmask.o -o countmask
+countmask.o: countmask.c
+	$(CC) $(EXTRAS) -c countmask.c

@@ -1,0 +1,4 @@
+redo_float: redo_float.o
+	$(CC) $(EXTRAS) redo_float.o -o redo_float -lm
+redo_float.o: redo_float.c
+	$(CC) $(EXTRAS) -c redo_float.c

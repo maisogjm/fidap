@@ -1,0 +1,275 @@
+#! /bin/csh -f
+# corr_brwp_script
+# 10.09.93 by Jose' Ma. Maisog, M.D.
+# Laboratory of Psychology and Psychopathology,
+# National Institute of Mental Health
+
+#
+# Shell script to perform a between-run within-voxel correlational
+# analysis on 16-bit ANALYZE images.
+
+# C executables called: fmri_corr_brwp, mtz, makeheader4
+
+# SAVE CURRENT WORKING DIRECTORY FOR LATER USE
+set startdir = $cwd
+
+# QUERY USER FOR IMAGE DIRECTORY
+scroll 10
+echo Note: This script calls C executables written by
+echo Susan Courtney, Ph.D., NIH/NIMH/LPP and
+echo Jose\' Ma. Maisog, M.D., NIH/NIMH/LPP
+echo ""
+echo This script will perform a between-run within-voxel correlational
+echo analysis on a set of 16-bit ANALYZE images.  The images must all
+echo be located in the same directory, and there must be at least one
+echo ANALYZE header .hdr file which contains the appropriate image
+echo dimension information.  You must have read/write access to the
+echo directory in which the images are kept.
+echo ""
+echo -n "Please enter directory in which 16-bit ANALYZE images are kept: "
+set dir = $<
+while (! -d $dir)
+    echo Directory $dir does not exist.
+    echo ""
+    echo -n "Please enter directory in which 16-bit ANALYZE images are kept: "
+    set dir = $<
+end
+cd $dir
+touch fidap.log
+echo '******************************************************' >> fidap.log
+echo `date` " : " $user " : " corr_brwp_script >> fidap.log
+
+# SHOW USER CONTENTS OF IMAGE DIRECTORY
+set filelist = `\ls *.img`
+set numANLZfiles = $#filelist
+echo ""
+echo There are $numANLZfiles ANALYZE images in ${dir}:
+\ls *.img
+echo -n Press Return to continue...
+set dummy = $<
+if ($numANLZfiles == "0") then
+    exit
+endif
+
+# QUERY USER FOR NAME OF INPUT TEXT FILE, IF IT ALREADY EXISTS
+echo ""
+echo This script will perform a between-run within-voxel correlational
+echo between two runs of 16-bit images.  The two runs must have the
+echo same number of images.
+echo ""
+echo To run this script, you must first make a text file.
+echo ""
+echo This file should contain the names of the images in the first group,
+echo followed by the names of the images in the second group, one .img
+echo filename pair per line.  Following each pair of names you must place
+echo a number which will be used to weight the global mean intensities of
+echo "the images when ratio-adjusting the images' global means (eg, '1')."
+echo ""
+echo -n Press Return to continue...
+set dummy = $<
+echo ""
+set example = `which corrAB.txt`
+echo For example:
+echo ""
+more $example
+echo ""
+echo -n Press Return to continue...
+set dummy = $<
+echo ""
+echo If this text file doesn\'t yet exist, you can create it using a text editor
+echo \(eg, vi, emacs, or ez\), or you can create it via this script.
+echo ""
+echo CHOICES:
+echo "  (1) The text file is already made."
+echo "      Continue with this script."
+echo "  (2) Make the text file now, using either"
+echo "      vi, emacs, or ez."
+echo "  (3) Create the text file by directly typing"
+echo "      in the filenames via this script."
+echo "  (4) Exit this script, and make the text file"
+echo "      (using, eg,  vi, emacs, or ez).  After it is"
+echo "      created you must return to this script."
+echo ""
+echo -n " CHOOSE ACTION: "
+set choice = $<
+while ($choice != "1" && $choice != "2" && $choice != "3" && $choice != "4")
+    echo -n " CHOOSE ACTION: "
+    set choice = $<
+end
+
+switch ($choice)
+    # TEXT FILE ALREADY MADE.
+    case 1:
+    echo ""
+    echo -n "Type in name of text file: "
+    set textfile = $<
+    while (! -e $textfile)
+	echo $textfile does not exist.
+	echo ""
+	echo -n "Type in name of text file: "
+	set textfile = $<
+    end
+    echo ""
+    breaksw
+
+    # MAKE THE TEXT FILE VIA THIS SCRIPT
+    case 2:
+    echo ""
+    echo -n "Type in desired name for text file: "
+    set textfile = $<
+    echo ""
+    echo -n "Type in desired editor (eg, "vi" or "emacs"): "
+    set editor = $<
+    echo ""
+    echo ""
+    echo Now entering the editor $editor, creating file $textfile.
+    echo This file should contain the names of the images in the first group,
+    echo followed by the names of the images in the second group, one .img
+    echo filename pair per line.  Following each pair of names you must place
+    echo a number which will be used to weight the global mean intensities of
+    echo "the images when ratio-adjusting the images' global means (eg, '1')."
+    echo -n Type Return when ready...
+    set dummy = $<
+    echo ""
+    eval `echo $editor $textfile`
+    echo ""
+    echo ""
+    breaksw
+
+    # MAKE THE TEXT FILE VIA THIS SCRIPT
+    case 3:
+    echo ""
+    echo -n "Type in desired name for text file: "
+    set textfile = $<
+    echo ""
+    echo I shall now create the file $textfile.  You must now type in the names
+    echo of the images in the first group, followed by the names of the images
+    echo in the second group, one .img filename pair per line.  Following each
+    echo pair of names you must place a number which will be used to weight
+    echo the global mean intensities of "the images when ratio-adjusting the
+    echo images' global means (eg, '1')." After the last carriage return,
+    echo type a \<Control-D\>.
+    echo ""
+    cat > $textfile
+    breaksw
+
+    # EXIT SCRIPT, MAKE THE TEXT FILE, AND THEN RETURN TO THIS SCRIPT.
+    case 4:
+    echo You have chosen to exit this script.  You must now create the text file.
+    echo This file should contain the names of the images in the first group,
+    echo followed by the names of the images in the second group, one .img
+    echo filename pair per line.  Following each pair of names you must place
+    echo a number which will be used to weight the global mean intensities of
+    echo "the images when ratio-adjusting the images' global means (eg, '1')."
+    echo Then re-run this script.
+    echo -n Type Return when ready...
+    set dummy = $<
+    exit
+    breaksw
+
+endsw
+
+# QUERY USER FOR NAME OF ANALYZE .hdr FILE
+echo ""
+echo Here are the ANALYZE header files in ${dir}:
+\ls *.hdr
+echo ""
+echo "Please enter the name of one of these ANALYZE header"
+echo "files which has the correct image dimensions for your"
+echo -n "images (including .hdr extension): "
+set hdrfile = $<
+while (! -e $hdrfile)
+    echo $hdrfile does not exist.
+    echo ""
+    echo -n "Type in name of header file file: "
+    set hdrfile = $<
+end
+set dims = `get_dims_from $hdrfile`
+
+# QUERY USER FOR DESIRED NAME OF MATLAB .mat FILE FOR CORRELATIONAL MAP
+echo ""
+echo "The correlational map will be written to a MATLAB .mat file."
+echo "Please enter the desired name of the .mat file,"
+echo -n "including .mat extension: "
+set cfile = $<
+
+# QUERY USER FOR DESIRED NAME OF MATLAB .mat FILE FOR DIFFERENCE OF MEANS IMAGE
+echo ""
+echo "The difference of the group means will be written to a MATLAB .mat file."
+echo "Please enter the desired name of the .mat file,"
+echo -n "including .mat extension: "
+set diffile = $<
+
+# QUERY USER WHETHER A SCALED 16-BIT IMAGE IS DESIRED
+echo ""
+echo If you wish, a scaled 16-bit image of the correlation map
+echo can be generated.  This image will be scaled by a factor
+echo of 1000.  Thus, a correlation of 0.672 will have a 16-bit
+echo value of 672.  This can be useful if you are doing
+echo pixel sampling within ANALYZE.  The drawback is that
+echo 16-bit images are fairly large.
+echo ""
+echo -n "Do you want scaled 16-bit images <y/n>? "
+set scaled_imgs = $<
+
+echo ""
+echo '******************************************************'
+echo ""
+echo Finally, you must type in a number between 0 and 19.
+echo The \'nice\' command will use this number to adjust
+echo the priority of this process.  \'0\' will result in
+echo the default priority being used.  Higher numbers will
+echo result in lower priorities.  We recommend \'0\' to be
+echo used during off hours, and higher \(nicer\) numbers to
+echo be used during regular work hours.
+echo ""
+echo -n "Priority adjustment number? "
+set priority = $<
+if ($priority == "") then
+    set priority = 0
+endif
+
+# CHECK WITH USER IF IT'S OKAY TO GO ON
+echo ""
+echo A mean image will be generated from the images in
+echo runs 1 AND 2.  It will be thresholded to generate
+echo a mask of the brain in the following manner.
+echo ""
+echo You will be asked to specify a number which shall be
+echo used as the threshold.  The maximum voxel intensity of
+echo the mean image, max_vox, will be determined, and
+echo then all voxels with intensity greater than or equal
+echo to max_vox \* threshold / 100 will be set to 1 in the
+echo mask\; all others will be set to 0 in the mask.
+echo Thus, threshold is expressed as a percentage.
+echo For example, if you wish the threshold to be 33.33%
+echo of max_vox, type in \"33.33\" instead of \"0.33\".
+echo ""
+echo -n "Continue <y/n>? "
+set choice = $<
+if ($choice != "y") then
+    echo QUITTING SHELL SCRIPT....
+    sleep 2
+    exit
+endif
+
+# CALL fmri_group_t:
+echo nice -$priority fmri_corr_brwp $hdrfile $textfile $cfile $diffile >> fidap.log
+echo nice -$priority fmri_corr_brwp $hdrfile $textfile $cfile $diffile
+nice -$priority fmri_corr_brwp $hdrfile $textfile $cfile $diffile
+sleep 10
+
+# CONVERT .mat FILES TO .img FILES
+mtz $cfile $cfile:r.img $dims[1-3]
+mtz $diffile $diffile:r.img $dims[1-3]
+makeheader4 $cfile:r.hdr   $dims 1 8 255 0 255 0 0
+makeheader4 $diffile:r.hdr $dims 1 8 255 0 255 0 0
+
+# GENERATE SCALED 16-BIT IMAGES IF DESIRED
+if ($scaled_imgs == "y") then
+    mtzW2 $cfile W$cfile:r.img $dims[1-3] 1000
+    makeheader4 W$cfile:r.hdr $dims 1 16 1000 -1000 1000 -1000 4
+endif
+
+exit
+

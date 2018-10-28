@@ -1,0 +1,92 @@
+####################################################################
+# Template input textfile for estimating hemodynamic response.
+# You will need to modify this file to run on your own particular
+# data set.  Pound signs  "#" are comments.  Note that blank
+# lines without pound signs will be interpreted as carriage returns,
+# so don't include any blank lines unless you really mean to have
+# a carriage return.
+#
+####################################################################
+# Select Single-Subject Analysis Menu.
+3
+####################################################################
+# Select Voxel-wise estimation of lag and dispersion.
+13
+####################################################################
+# Here type in the name of the output directory.
+# If this is the current directory, you can use a "."
+# You can use absolute pathnames, e.g., /u4/data6/mri/raw_data
+/u1/work
+####################################################################
+# ANALYZE header file.  Can be absolute or relative pathname.
+# In this example, we give an absolute pathname.
+/u1/work/Rr1_ctwm015.hdr
+####################################################################
+# 8-bit mask file (.img ANALYZE format file).
+/u1/work/mask_20_e.img
+####################################################################
+# Input textfile containing names of files.
+# Filenames within textfile can be absolute or relative pathnames.
+# Use the "wc -w" command to check the number of lines in this input
+# textfile.  E.g., running the command "wc -w input.txt" should
+# return the number of scans to be analyzed, no more, no less.
+input.txt
+####################################################################
+# Text file specifying slice acquisition sequence.
+# Usually odd slices first, then even slices.
+/home/ajm3/REG_TXT/seq.txt
+####################################################################
+# Number of effects OF INTEREST.
+3
+####################################################################
+# Now list the text file for each independent variable of interest.
+vis_stim.txt
+face_stim.txt
+memtask.txt
+####################################################################
+# Number of fMRI runs.
+8
+####################################################################
+# Number of scans per run.
+60
+####################################################################
+# TR in seconds.
+3
+####################################################################
+# Maximum lag to be allowed.  Lags above this value will be
+# truncated to this value.
+12
+####################################################################
+# Minimum lag to be allowed.  Lags below this value will be
+# truncated to this value.
+0
+####################################################################
+# Priority.  Here, give a number between 0 and 19 to set the priority.
+# 0 means default high priority, 19 means lowest priority.  During
+# regular workhours, consider using 19.
+19
+####################################################################
+# Absolute times flag.  Set to y if you want lags to be expressed
+# in absolute time, to n if you want lags to be expressed in
+# relative time.  The distinction is as follows.  Suppose the
+# entire brain had the same lag of 3 seconds, but in a two-slice
+# fMRI data set the second slice was acquired 1.5 seconds after
+# the first slice.  Then, in ABSOLUTE times, voxels in the two
+# slices would have the same lag of 3 seconds, but in RELATIVE
+# times, voxels in the second slice would have an apparent lag
+# of 4.5 seconds.  Recommend using RELATIVE times.
+n
+####################################################################
+# Ratio normalization to set the global mean intensity of each scan to
+# a constant can be performed.  Change the following "y" to a "n" if
+# you desire NO normalization to be done.
+y
+####################################################################
+# After the lag/dispersion estimation is finished, you will be left at
+# the Single-Subject Analysis Menu of fidap.  The following "17"
+# exits from fidap.  Without this, you will not exit fidap gracefully.
+# Of course, you can have fidap do other procedures at this point.
+# and then go into the menu for Statistical Conversions and
+# Correcting for Multiple Comparisons, you'd have a "16" and a "4"
+# (on separate lines) instead of a "17".
+17

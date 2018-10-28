@@ -1,0 +1,279 @@
+#! /bin/csh -f
+# blobs_script
+# 03.16.94 by Jose' Ma. Maisog, M.D.
+# Laboratory of Psychology and Psychopathology,
+# National Institute of Mental Health
+
+# Shell script to do blobs analysis on Z-score images
+
+# C executables called: blobs, get_dims_from, makeheader4, max16bit2, min16bit2,
+# maxfp, minfp
+
+# QUERY USER FOR IMAGE DIRECTORY
+scroll 10
+echo  ""
+echo '******************************************************'
+echo  ""
+echo This script will perform a blobs analysis on Z-score images using a method
+echo proposed by Friston and Worsley in a paper currently under review.
+echo Z-score images must be floating point ANALYZE images with appropriate
+echo ANALYZE headers.  You must have read/write access to the directory in
+echo which the images are kept.
+echo ""
+echo -n "Please enter directory in which floating point Z-score images are kept: "
+set dir = $<
+while (! -d $dir)
+    echo Directory $dir does not exist.
+    echo ""
+    echo -n "Please enter directory in which floating point Z-score images are kept: "
+    set dir = $<
+end
+cd $dir
+touch fidap.log
+echo '******************************************************' >> fidap.log
+echo `date` " : " $user " : " blobs_script >> fidap.log
+
+# MAKE LIST OF IMAGES TO BE ANALYZED
+echo  ""
+echo '******************************************************'
+echo  ""
+echo Here are the ANALYZE images found in this directory:
+ls *.img
+echo ""
+echo Need root name of images to be analyzed.  This is the left-most
+echo string of characters in the image filenames which will match all
+echo of the images you wish to analyze, and ONLY those images.
+echo ""
+echo -n "Type in root name of images to be analyzed: "
+set rootname = $<
+echo ""
+set list = $rootname*.img
+echo These Z-score images are going to be analyzed:
+echo $list
+echo ""
+echo They are assumed to already have ANALYZE headers.
+
+# QUERY USER FOR TALAIRACH ORIGIN, IF APPLICABLE
+echo  ""
+echo '******************************************************'
+echo  ""
+echo -n "Is this data spatially normalized <y/n>? "
+set sn = $<
+while (($sn != 'y') && ( $sn != 'n'))
+    echo "Type a 'y' or an 'n'."
+    echo -n "Is this data spatially normalized <y/n>? "
+    set sn = $<
+end
+if ($sn == 'y') then
+    echo ""
+    echo Type in the ANALYZE coordinates which map to the
+    echo Talairach origin.  For \"classic\" SPM, this is
+    echo \[33, 53, 8.].  For SPM95, the X and Y coordinates
+    echo are the same, but the Z coordinate may vary.
+    echo ""
+    echo -n " ANALYZE X-coordinate mapping to Talairach origin: "
+    set AX = $<
+    echo -n " ANALYZE Y-coordinate mapping to Talairach origin: "
+    set AY = $<
+    echo -n " ANALYZE Z-coordinate mapping to Talairach origin: "
+    set AZ = $<
+endif
+
+# GET FWHM INFORMATION
+echo  ""
+echo '******************************************************'
+echo  ""
+echo "If you know the CALCULATED FWHM's of the Z-score image, the blobs"
+echo analysis program can do separate calculations based on this
+echo information in addition to calculations based on the MEASURED
+echo smoothness of the Z-score image.
+echo ""
+echo -n "Do you want to enter CALCULATED FWHM's <y/n>? "
+set choice = $<
+if ($choice == "y") then
+    set OPTIONAL_ARGS
+    echo ""
+    echo -n "  FWHM in mm along X axis: "
+    set OPTIONAL_ARGS = ($OPTIONAL_ARGS $<)
+    echo -n "  FWHM in mm along Y axis: "
+    set OPTIONAL_ARGS = ($OPTIONAL_ARGS $<)
+    echo -n "  FWHM in mm along Z axis: "
+    set OPTIONAL_ARGS = ($OPTIONAL_ARGS $<)
+endif
+
+# GET USER-DEFINED W
+if (! $?OPTIONAL_ARGS) then
+    echo ""
+    echo ""
+    echo If you want, you can have the blobs analysis program do additional
+    echo calculations based on your own estimate of the variable W.
+    echo ""
+    echo -n "Do you want to enter your own estimate of W <y/n>? "
+    set choice = $<
+    if ($choice == "y") then
+        echo ""
+        echo -n "  Enter value of W: "
+        set OPTIONAL_ARGS = $<
+    endif
+endif
+
+if (! $?OPTIONAL_ARGS) set OPTIONAL_ARGS
+
+# GET 8-BIT MASK
+echo  ""
+echo '******************************************************'
+echo  ""
+echo You must now enter the name of an 8-bit mask which is to be applied
+echo to the Z-score image.  The 8-bit mask must be of the same image
+echo dimensions as the Z-score image, must be set to 1 in voxels which
+echo are to be included in the volume to be analyzed, and must be zero
+echo everywhere else.  This 8-bit mask may have been generated from
+echo "previous analyses in fidap; or you may create one by thresholding"
+echo an average image of the original experimental data images.
+echo ""
+echo -n "Name of 8-bit mask image (including .img extension): "
+set mask = $<
+while (! -e $mask)
+    echo $mask does not exist.
+    echo ""
+    echo -n "Name of 8-bit mask image (including .img extension): "
+    set mask = $<
+end
+
+
+# GET ZSCORE THRESHOLD
+echo  ""
+echo '******************************************************'
+echo  ""
+echo You must now enter the Z-score threshold.  Z-scores below this
+echo threshold will be excluded from clusters.  Z-scores equal to
+echo or greater than this threshold will be included in the analysis,
+echo to form \"clumps\", or \"blobs.\"
+echo ""
+echo -n "Z-score threshold (e.g., 3.09): "
+set zscore_threshold = $<
+
+# GET PROBABILITY THRESHOLD
+echo  ""
+echo '******************************************************'
+echo  ""
+echo You must now enter the probability threshold.  Blobs whose
+echo probability of occuring is greater than this threshold are
+echo considered not significant.
+echo ""
+echo -n "Probability threshold (e.g., 0.05): "
+set prob_threshold = $<
+
+# INFORMATION ABOUT OUTPUT IMAGE FILES
+echo  ""
+echo '******************************************************'
+echo  ""
+echo Z-score images will be subjected to blobs analysis.
+echo A text file containing the results will be generated
+echo and will be named
+echo ""
+echo "    blobs_<root>_${zscore_threshold}_$prob_threshold.txt"
+echo ""
+echo "where <root> is the root name of the original Z-score image."
+echo ""
+echo "16-bit blobs images will be generated; their voxel values will"
+echo correspond to the entries in the table in the output text file.
+echo Their names will follow the convention
+echo ""
+echo "    Wblobs_<root>_${zscore_threshold}_$prob_threshold.img"
+echo ""
+echo The original z-map will be masked with the blobs image;
+echo that image will follow the naming convention
+echo ""
+echo "    WZblobs_<root>_${zscore_threshold}_$prob_threshold.img"
+echo ""
+echo Finally, probabilities for clusters found will be displayed in
+echo images named
+echo ""
+echo "    WPblobs_<root>_${zscore_threshold}_$prob_threshold.img"
+echo ""
+echo 
+
+# CHECK WITH USER IF IT'S OKAY TO GO ON
+echo ""
+echo ""
+echo -n "Continue <y/n>? "
+set choice = $<
+if ($choice != "y") then
+    echo QUITTING SHELL SCRIPT....
+    sleep 2
+    exit
+endif
+
+# LOOP OVER ALL Z-SCORE IMAGES
+set img_no = 1
+while ($img_no <= $#list)
+    echo ""
+    echo Analyzing $list[$img_no]...
+
+    # CALL blobs
+    echo `date` $user >> fidap.log
+    echo blobs $list[$img_no]:r.hdr $list[$img_no] $mask\
+                Wblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img\
+                Zblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img\
+                Pblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img\
+                blobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.txt\
+                $zscore_threshold $prob_threshold $OPTIONAL_ARGS >> fidap.log
+    echo blobs $list[$img_no]:r.hdr $list[$img_no] $mask\
+                Wblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img\
+                Zblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img\
+                Pblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img\
+                blobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.txt\
+                $zscore_threshold $prob_threshold $OPTIONAL_ARGS
+    if ($sn == 'y') then
+        blobs $list[$img_no]:r.hdr $list[$img_no] $mask\
+                Wblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img\
+                Zblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img\
+                Pblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img\
+                blobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.txt\
+                $zscore_threshold $prob_threshold $OPTIONAL_ARGS << EOF
+y
+$AX
+$AY
+$AZ
+EOF
+    else
+        blobs $list[$img_no]:r.hdr $list[$img_no] $mask\
+                Wblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img\
+                Zblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img\
+                Pblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img\
+                blobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.txt\
+                $zscore_threshold $prob_threshold $OPTIONAL_ARGS << EOF
+n
+EOF
+    endif
+
+    # MAKE HEADER FOR BLOBS IMAGE
+    set dims = `get_dims_from $list[$img_no]:r.hdr`
+    set max = `max16bit2 Wblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img`
+    @ max++
+    makeheader4 Wblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.hdr $dims 1 16 $max 0 $max 0 4
+
+    # MAKE HEADER FOR PROBABILITY IMAGE AND CONVERT TO 16 BIT
+    set fpmax = `maxfp Pblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img`
+    set fpmin = `minfp Pblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img`
+    fp2word2 Pblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img WPblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img 1
+    set max = `max16bit2 WPblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img`
+    set min = `min16bit2 WPblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img`
+    @ max++
+    makeheader4 WPblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.hdr $dims 1 16 $max $min $fpmax $fpmin 4
+    makeheader4 Pblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.hdr $dims 1 32 $max $min $fpmax $fpmin 16
+
+    # MAKE HEADER FOR MASKED ZSCORE IMAGE AND CONVERT TO 16 BIT
+    set fpmax = `maxfp Zblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img`
+    set fpmin = `minfp Zblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img`
+    fp2word2 Zblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img WZblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img 1000
+    set max = `max16bit2 WZblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img`
+    set min = `min16bit2 WZblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.img`
+    @ max++
+    makeheader4 WZblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.hdr $dims 1 16 $max $min $fpmax $fpmin 4
+    makeheader4 Zblobs_$list[$img_no]:r_${zscore_threshold}_$prob_threshold.hdr $dims 1 32 $max $min $fpmax $fpmin 16
+
+    @ img_no++
+end
+

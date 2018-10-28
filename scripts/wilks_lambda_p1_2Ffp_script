@@ -1,0 +1,228 @@
+#! /bin/csh -f
+# wilks_lambda_p1_2Ffp_script
+# 05.19.96 by Jose' Ma. Maisog, M.D.
+# Laboratory of Psychology and Psychopathology,
+# National Institute of Mental Health
+
+# C executables called: get_dims_from, wilks_lambda_p1_2Ffp
+# maxfp, minfp, makeheader4, F2Z, F2Z3, sgnFP, multFP1, multFP2
+
+# Also calls the C shell script fp2byte_script
+#
+
+touch fidap.log
+scroll 10
+echo  ""
+echo '******************************************************'
+echo  ""
+echo  Shell script to convert a Wilks\' Lambda map to an F-test map,
+echo using an exact conversion.  It is assumed that p=1 for the
+echo Wilks\' Lambda map.  The shell script then converts the F-test
+echo map to a Z-score map.
+echo ""
+echo The numerator degrees of freedom of the F-test will be
+echo the same as the parameter nu-H of the Wilks\' Lambda.
+echo ""
+echo If the numerator degrees of freedom of the F-test is equal
+echo to 1, the square root of the F-tests gives unsigned t-tests.
+echo The t-tests can be given proper signs by examining the signs
+echo in the regression coefficient map.  Then, an approximate
+echo method described by E.T. Federighi will be used to convert
+echo the t-tests to Z-scores. In this case, large negative values
+echo in the resulting Z-score map will represent significant
+echo \"deactivations\".  These Z-score maps will have the same
+echo name as the Wilks\' Lambda maps, but will with \"ZF\"
+echo prepended to the name.  Note capital \"Z\".
+echo ""
+echo If the numerator df is NOT equal to 1, an approximate method
+echo described by E. Paulson will be used to directly convert
+echo F-tests to Z-scores. Large negative values in the resulting
+echo Z-score map will represent very low values of the F-test,
+echo i.e., NON-significant findings.  These Z-score maps will
+echo have the same name as the Wilks\' Lambda maps, but with
+echo \"zF\" prepended to the name.  Note small \"z\".
+echo ""
+echo  Both the F-test map and the Z-score map are then converted
+echo  to byte format for viewing in ANALYZE.
+echo ""
+echo References:
+echo ""
+echo Rencher AC, Methods of Multivariate Analysis, New York:
+echo John Wiley \& Sons, 1995, table 6.1, p. 181.
+echo ""
+echo Federighi, E.T., \"Extended tables of the percentage points
+echo of Student\'s t-distribution\" J. Am. Stat. Assoc.,
+echo 54, 683-688 \(1959\).
+echo ""
+echo Paulson E, \"An approximate normalization of the Analysis
+echo of Variance distribution,\" Ann Math Statist 13:233-235 \(1942\).
+echo ""
+
+# Query user for directory
+echo  ""
+echo '******************************************************'
+echo  ""
+echo -n "Enter the name of the directory containing data files: "
+set dir = $<
+while (! -d $dir)
+    echo Directory $dir does not exist.
+    echo ""
+    echo -n "Enter the name of the directory containing data files: "
+    set dir = $<
+end
+cd $dir
+touch fidap.log
+echo '******************************************************' >> fidap.log
+echo `date` " : " $user " : " wilks_lambda_p1_2Ffp_script >> fidap.log
+
+echo  ""
+echo '******************************************************'
+echo  ""
+echo -n "Name of Wilks' Lambda map? "
+set wilks = $<
+while ((! -e $wilks) || (! -e $wilks:r.hdr))
+    if (! -e $wilks) then
+        echo File $wilks does not exist.
+        echo ""
+        echo -n "Name of Wilks' Lambda map? "
+        set wilks = $<
+    endif
+    if (! -e $wilks:r.hdr) then
+        echo File $wilks:r.hdr does not exist.
+        echo Cannot convert $wilks to F-test map.
+        exit
+    endif
+end
+echo Wilks Lambda map is $wilks >> fidap.log
+set dims = `get_dims_from $wilks:r.hdr`
+echo ""
+echo NOTE: It is assumed that p=1 for the Wilks\' Lambda map.
+echo NOTE: It is assumed that p=1 for the Wilks\' Lambda map. >> fidap.log
+echo ""
+echo -n "nu-H? "
+set nuH = $<
+echo nu-H is $nuH >> fidap.log
+echo ""
+echo -n "nu-E? "
+set nuE = $<
+echo nu-E is $nuE >> fidap.log
+echo ""
+echo -n "Effective denominator df for F-test? "
+set v2 = $<
+echo Effective denominator df for F-test is $v2 >> fidap.log
+
+
+# QUERY USER FOR SCALING FACTOR FOR F-TEST MAPS
+echo ""
+echo '******************************************************'
+echo  ""
+echo F-test maps may be scaled by a multiplicative floating point
+echo number.  If you want no scaling, indicate a \"1\" for the scaling
+echo factor.
+echo ""
+echo Scaling may be necessary if you\'re adjusting degrees of freedom.
+echo If the denominator df was B before adjustment and A after adjustment,
+echo the scaling factor for the F-test would also be \(A \/ B\),
+echo A divided by B.
+echo ""
+echo -n "Scaling factor for F-test maps? "
+set scale_factor = $<
+echo Scale factor of $scale_factor will be applied to F-tests.  >> fidap.log
+
+
+if ( $nuH == 1) then
+    echo ""
+    echo '******************************************************'
+    echo  ""
+    echo Since nu-H of the Wilks\' Lambda is equal to 1, the numerator
+    echo df of the F-test is equal to 1, and therefore the F-test map
+    echo can be converted to a Z-score map in which directionality of
+    echo \"activation\" can be assigned.  Thus, very large positive
+    echo Z-scores therefore will represent significant "activations"
+    echo with respect to the effect of interest, and very large negative
+    echo Z-scores will represent significant \"deactivations\" with
+    echo respect to the effect of interest.  A capital \"Z\" will be
+    echo used in the name of this Z-score map file.
+    echo ""
+    echo Now you must enter the name of the corresponding
+    echo FLOATING POINT B_hat regression coefficient map.
+    echo This will be used to assign negative signs to
+    echo \"deactivations\" in the Z-score map.  Include
+    echo the .img extension.
+    echo ""
+    echo -n "Regression coefficient map? "
+    set b_hat = $<
+    while (! -e $b_hat)
+        echo ""
+        echo File $b_hat does not exist.
+        echo -n "Regression coefficient map? "
+        set b_hat = $<
+    end
+    echo Regression coefficient map is $b_hat >> fidap.log
+else
+    echo ""
+    echo '******************************************************'
+    echo  ""
+    echo Since nu-H and therefore the numerator df of the F-test
+    echo is greater than 1, large F-tests will map onto
+    echo large positive Z-scores only.
+    echo Very large positive Z-scores therefore will represent
+    echo significant findings, but no directionality can be assigned
+    echo to them.  Very large negative Z-scores will represent
+    echo NON-significant voxels, NOT significant \"deactivations.\"
+    echo A small\"z\" will be used in the name of this Z-score map file.
+    echo ""
+    echo Press \<Return\> to continue...
+    set dummy = $<
+endif
+echo  ""
+echo '******************************************************'
+echo  ""
+echo Creating F-test map F$wilks...
+wilks_lambda_p1_2Ffp $wilks $nuH $nuE F$wilks
+set max = `maxfp F$wilks`
+set min = `minfp F$wilks`
+makeheader4 F$wilks:r.hdr $dims 1 32 255 0 $max $min 16 1
+echo  ""
+echo '******************************************************'
+echo  ""
+
+if ( $nuH > 1) then
+    # Create F-test using Paulson's approximate method.
+    echo Creating Z-score map zF$wilks...
+
+    # CALL F2Z
+    echo F2Z F$wilks $nuH $v2 $scale_factor zF$wilks
+    echo F2Z F$wilks $nuH $v2 $scale_factor zF$wilks >> fidap.log
+    F2Z F$wilks $nuH $v2 $scale_factor zF$wilks
+
+    set max = `maxfp zF$wilks`
+    set min = `minfp zF$wilks`
+    makeheader4 zF$wilks:r.hdr $dims 1 32 255 0 $max $min 16 1
+    echo  ""
+    echo '******************************************************'
+    echo  ""
+    echo Converting F$wilks and zF$wilks to byte format...
+    fp2byte_script F$wilks zF$wilks
+    echo  ""
+else
+    # Generate signed F-test map from F-test map and regression
+    # coefficient map.
+    echo Creating Z-score map ZF$wilks...
+    echo F2Z F$wilks $nuH $v2 $scale_factor ZF$wilks $b_hat
+    echo F2Z F$wilks $nuH $v2 $scale_factor ZF$wilks $b_hat >> fidap.log
+    F2Z F$wilks $nuH $v2 $scale_factor ZF$wilks $b_hat
+    multFP2 ZF$wilks -1 IZF$wilks | grep writing
+    foreach file (ZF$wilks IZF$wilks)
+        set max = `maxfp ZF$wilks`
+        set min = `minfp ZF$wilks`
+        makeheader4 $file:r.hdr $dims 1 32 255 0 $max $min 16 1
+    end
+    echo  ""
+    echo '******************************************************'
+    echo  ""
+    echo Converting F$wilks, ZF$wilks, and IZF$wilks to byte format...
+    fp2byte_script F$wilks ZF$wilks IZF$wilks
+    echo  ""
+endif
+echo All done!

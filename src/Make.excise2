@@ -1,0 +1,6 @@
+excise2: excise2.o imgio.o
+	$(CC) $(EXTRAS) excise2.o imgio.o -o excise2
+excise2.o: excise2.c
+	$(CC) $(EXTRAS) -c excise2.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

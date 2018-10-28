@@ -1,0 +1,6 @@
+grandmaxfp: grandmaxfp.o imgio.o
+	$(CC) $(EXTRAS) grandmaxfp.o imgio.o -o grandmaxfp -lm
+grandmaxfp.o: grandmaxfp.c
+	$(CC) $(EXTRAS) -c grandmaxfp.c
+imgio.o:    analyze6.h imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

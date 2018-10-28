@@ -1,0 +1,6 @@
+softmeanB: softmeanB.o imgio.o
+	$(CC) $(EXTRAS) softmeanB.o imgio.o -o softmeanB
+softmeanB.o: softmeanB.c
+	$(CC) -c softmeanB.c
+imgio.o: imgio.c
+	$(CC) -c imgio.c

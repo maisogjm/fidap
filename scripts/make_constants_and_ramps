@@ -1,0 +1,51 @@
+#!/bin/csh -f
+# make_constants_and_ramps
+# 04.26.96 by Jose' Ma. Maisog, M.D.
+# Laboratory of Psychology and Psychopathology,
+# National Institute of Mental Health
+
+#
+# Shell script to make constant and ramp independent variables for
+# multiple regression.
+
+# QUERY USER FOR NUMBER OF RUNS AND NUMBER OF TIMEPOINTS PER RUN
+echo -n "Number of runs? "
+set num_runs = $<
+echo -n "Number of scans (timepoints) per run? "
+set num_dat_pts = $<
+@ tot_num_pts = $num_runs * $num_dat_pts
+set mean = `mean 1 $num_dat_pts`
+
+# OUTER LOOP OVER RUNS
+set run_index1 = 1
+while ($run_index1 <= $num_runs)
+
+    echo Making ones_$run_index1.txt and ramp_$run_index1.txt...
+    if ( -e ones_$run_index1.txt ) rm ones_$run_index1.txt
+    if ( -e ramp_$run_index1.txt ) rm ramp_$run_index1.txt
+    touch ones_$run_index1.txt
+    touch ramp_$run_index1.txt
+
+    # INNER LOOP OVER RUNS
+    set run_index2 = 1
+    while ($run_index2 <= $num_runs)
+
+        # LOOP OVER TIME POINTS
+
+        set dat_index = 1
+        while ($dat_index <= $num_dat_pts)
+            if ($run_index2 == $run_index1) then
+                echo 1          >> ones_$run_index1.txt
+                echo `subtract $dat_index $mean` >> ramp_$run_index1.txt
+            else
+                echo 0          >> ones_$run_index1.txt
+                echo 0          >> ramp_$run_index1.txt
+            endif
+            @ dat_index ++
+        end
+
+        @ run_index2 ++
+    end
+
+    @ run_index1 ++
+end

@@ -1,0 +1,10 @@
+convolve4D: convolve4D.o nrutil.o fourn.o imgio.o
+	$(CC) $(EXTRAS) convolve4D.o nrutil.o fourn.o imgio.o -o convolve4D -lm
+convolve4D.o: convolve4D.c
+	$(CC) $(EXTRAS) -c convolve4D.c
+nrutil.o: nrutil.c
+	$(CC) $(EXTRAS) -c nrutil.c
+fourn.o:  fourn.c
+	$(CC) $(EXTRAS) -c fourn.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

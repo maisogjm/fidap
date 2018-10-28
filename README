@@ -1,0 +1,80 @@
+(I) CHECK TARFILE CONTENTS
+
+In addition to this README file, you should see 
+an installation script named INSTALL_NIH_FIDAP,
+a directory named scripts, a directory named
+src, and a directory named docs.
+
+INSTALL_NIH_FIDAP is a C-shell script which installs NIH
+fidap for you.
+
+scripts and src contain C-shell scripts and source code
+for NIH fidap.
+
+docs contains drafts of sections from a user's guide, still
+being written.  They are in MS Word format.
+
+
+##############################################################
+
+(II) DETERMINE TWO THINGS
+
+To install NIH fidap, you must know two pieces of information. 
+
+(A) First, you must know the name of an ANSI C compiler on your
+system, and any optional compilation flags you might desire.
+
+On the SPARCstation on which NIH fidap was developed, I used
+a compiler named "acc".  gcc seems to work fine, too.
+You might want to use some optimization flags when compiling.
+One use attempted to compile NIH fidap using a commercial C
+compiler, and found that optimization flags above -O2 seemed
+to result in annoying but harmless segmentation faults when
+the multiple regression code finished writing out results.
+On the version of gcc which I use, -O3 produces no
+segmentation faults, however.  On an SGI machine on the
+NIH campus, the compiler "cc" worked.
+
+Note that the three X-windows programs, dvt, dvt16, and dvt25
+may fail to compile if you don't have the proper X11 libraries
+in the expected directories.  You will still be able to run
+most of NIH fidap, though.
+
+(B) Second, you must know the name of a directory into which you
+want executable shell scripts and compiled code to be placed.
+This will be the NIH fidap directory.  You must have write
+permissions into this directory, otherwise installation will
+fail.  If the directory you have designated does not already
+exist, the installation script will attempt to create it.
+Obviously, this directory must be accessible by everyone who
+is to use NIH fidap at your site.  Note that the total amount
+of disk space that the scripts and executables occupy is about
+3 Mbytes.
+
+
+##############################################################
+
+(III) INSTALL
+
+To install, run the script INSTALL_NIH_FIDAP.  It will prompt
+you for the above two pieces of information.  If it finishes
+without error, all executables will be placed in the designated
+directory.
+
+
+##############################################################
+
+(IV) SET SHELL AND ENVIRONMENT VARIABLES
+
+After installation, there are TWO more things to do for the
+accounts of each NIH fidap user.  They both have to do
+with the NIH fidap directory (the directory in which you've
+installed NIH fidap), determined in (II,B) above:
+
+(A) Most importantly, add the NIH fidap directory to the
+Unix search path.  Necessary if one wishes to use NIH fidap.
+
+(B) Add the NIH fidap directory to the environment variable
+MATLABPATH.  This is necessary only if you wish to use the
+few MATLAB scripts which are bundled in with NIH fidap.
+

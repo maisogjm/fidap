@@ -1,0 +1,9 @@
+doimgsamp16bit: doimgsamp16bit.o imgsamp16bit.o imgio.o
+	$(CC) $(EXTRAS) doimgsamp16bit.o imgsamp16bit.o imgio.o \
+			-o doimgsamp16bit
+doimgsamp16bit.o: doimgsamp16bit.c
+	$(CC) $(EXTRAS) -c doimgsamp16bit.c
+imgsamp16bit.o: imgsamp16bit.c
+	$(CC) $(EXTRAS) -c imgsamp16bit.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c

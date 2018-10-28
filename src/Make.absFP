@@ -1,0 +1,4 @@
+absFP: absFP.o
+	$(CC) $(EXTRAS) absFP.o -o absFP -lm
+absFP.o: absFP.c
+	$(CC) $(EXTRAS) -c absFP.c

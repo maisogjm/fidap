@@ -1,0 +1,4 @@
+Npad: Npad.o
+	$(CC) $(EXTRAS) Npad.o -o Npad -lm
+Npad.o: Npad.c
+	$(CC) $(EXTRAS) -c Npad.c

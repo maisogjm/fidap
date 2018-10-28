@@ -1,0 +1,126 @@
+#! /bin/csh -f
+# anlz2mac_script
+# 01.24.94 by Jose' Ma. Maisog, M.D.
+# Laboratory of Psychology and Psychopathology,
+# National Institute of Mental Health
+
+# Shell script to convert ANALYZE images to "Mac" format
+
+# C executables called: make_mac_header, get_dims_from, makeheader4, excise,
+# max16bit
+
+# QUERY USER FOR IMAGE DIRECTORY
+scroll 10
+echo ""
+echo -n "Please enter directory in which 16-bit ANALYZE images are kept: "
+set dir = $<
+while (! -d $dir)
+    echo Directory $dir does not exist.
+    echo ""
+    echo -n "Please enter directory in which 16-bit ANALYZE images are kept: "
+    set dir = $<
+end
+cd $dir
+touch fidap.log
+echo '******************************************************' >> fidap.log
+echo `date` " : " $user " : " anlz2mac_scriptB >> fidap.log
+
+# MAKE LIST OF IMAGES TO BE REGISTERED
+echo ""
+echo Here are the ANALYZE images found in this directory:
+ls *.img
+echo ""
+echo Need root name of images to be sliced.  This is the left-most
+echo string of characters in the image filenames which will match all
+echo of the images you wish to slice, and ONLY those images.
+echo ""
+echo For example, if you wanted to slice images named run1a001.img,
+echo run1a002.img, ..., run1b001.img, run1b002.img, etc., the root name
+echo "would be 'run1'; but if you wanted to slice ONLY the images"
+echo run1a001.img, run1a002.img, etc., and NOT the images run1b001.img,
+echo "run1b002.img, etc., then the root name would be 'run1a'."
+echo ""
+echo -n "Type in root name of images to be sliced: "
+set rootname = $<
+echo ""
+set list = $rootname*.img
+echo These files are going to be sliced:
+echo $list
+
+# QUERY USER FOR ROOTNAME OF MAC IMAGES
+echo ""
+echo This script will produce a series of Mac image files
+echo with naming convention
+echo ""
+echo "    slSLICE.ROOTNAME.VOLUME"
+echo ""
+echo where SLICE is the slice number, ROOTNAME is a user-defined character
+echo string, and VOLUME is the volume number, in alphabetical order.
+echo ""
+echo -n "Type in ROOTNAME for Mac image files: "
+set mac_rootname = $<
+
+# MAKE LIST OF NUMBERS FOR NUMBERING MAC IMAGES
+set num_list = {0,1,2,3,4,5,6,7,8,9}{0,1,2,3,4,5,6,7,8,9}{0,1,2,3,4,5,6,7,8,9}
+shift num_list
+
+echo ""
+echo '******************************************************'
+echo ""
+echo Finally, you must type in a number between 0 and 19.
+echo The \'nice\' command will use this number to adjust
+echo the priority of this process.  \'0\' will result in
+echo the default priority being used.  Higher numbers will
+echo result in lower priorities.  We recommend \'0\' to be
+echo used during off hours, and higher \(nicer\) numbers to
+echo be used during regular work hours.
+echo ""
+echo -n "Priority adjustment number? "
+set priority = $<
+if ($priority == "") then
+    set priority = 0
+endif
+echo $priority >> fidap.log
+
+# SHOW USER VOLUME ORDER
+echo ""
+echo "Here are the ANALYZE volumes and their alphabetic order:"
+set volume_index = 1
+while ($volume_index <= $#list)
+    echo $num_list[$volume_index] $list[$volume_index]
+    @ volume_index++
+end
+
+# LOOP OVER ALL ANALYZE IMAGES
+set volume_index = 1
+while ($volume_index <= $#list)
+    echo ""
+    echo Slicing up $list[$volume_index]...
+
+    # DETERMINE xdim, ydim, zdim, AND num_bytes
+    set dims = `get_dims_from $list[$volume_index]:r.hdr`
+    set xdim = $dims[1]
+    set ydim = $dims[2]
+    set num_slices = $dims[3]
+
+    # DETERMINE NUMBER OF BYTES PER SLICE
+    @ num_vox = $xdim * $ydim
+    @ num_bytes = 2 * $num_vox
+
+
+    # LOOP OVER ALL SLICES
+    set slice_index = 1
+    while ($slice_index <= $num_slices)
+	echo "  sl$num_list[$slice_index].$mac_rootname.$num_list[$volume_index]"
+	@ bytes2skip = ( $slice_index - 1 ) * $num_bytes
+	nice -$priority excise $list[$volume_index] /usr/tmp/anlz2mac$$.img $bytes2skip $num_bytes
+	set macmax = `max16bit /usr/tmp/anlz2mac$$`
+	make_mac_header sl$num_list[$slice_index].$mac_rootname.$num_list[$volume_index] $macmax 0 $xdim $ydim
+	nice -$priority cat /usr/tmp/anlz2mac$$.img >> sl$num_list[$slice_index].$mac_rootname.$num_list[$volume_index]
+	\rm /usr/tmp/anlz2mac$$.img
+	@ slice_index++
+    end
+
+    @ volume_index++
+end
+

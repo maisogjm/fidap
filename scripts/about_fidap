@@ -1,0 +1,138 @@
+<Space> to page forward, <b> to page backward...
+
+********************************************************************
+*                                                                  *
+*     About the NIH Functional Imaging Data Analysis Platform      *
+*                         (NIH fidap)                              *
+*                                                                  *
+*                      last updated 10.25.96                       *
+*                                                                  *
+*              Section on  Functional Brain Imaging                *
+*                Laboratory of Brain and Cognition                 *
+*               National Institute of Mental Health                *
+*                                                                  *
+********************************************************************
+
+fidap is a set of routines for the processing and analysis of 16-bit
+volumetric functional neuroimaging data, written and assembled mostly
+by Jose' Ma. Maisog, M.D., under the direction of James V. Haxby,
+Ph.D., both of the Section on Functional Brain Imaging, Laboratory of
+Brain and Cognition, National Institute of Mental Health.
+
+The file named "fidap" is actually a shell script which calls a menu
+driver, also written as a C shell script, which makes calls to other
+C-shell scripts, which in turn make calls to executables written in
+ANSI C by Dr. Maisog and Dr. Susan Courtney, also of NIMH/LPP/SFBI.
+In particular, Dr. Courtney implemented the ANCOVA routines under the
+Single-Subject Analysis menu.  In our C code, some calls are made
+to routines from Numerical Recipes in C (Press WH, Teukolsky SA,
+Vetterling WT, Flannery BP, Numerical Recipes in C, 2nd edition,
+1992, Cambridge University Press).  Dr. Peter Jezzard contributed
+source code for fMRI reconstruction.  Dr. Allen Song also contributed
+source code for fMRI reconstruction, and for the X-windows programs
+dvt and dvt16.  Also, Dr. Francois Lalonde has contributed some
+C-shell scripts.
+
+I have been careful not to make my C code too complicated, or to
+make any calls to architecture-specific libraries, so most of
+fidap's C source code should compile easily with an ANSI C compiler.
+If you do not have certain X11 libraries, the two X-windows programs
+dvt and dvt16 may not compile.  You will still be able to use the
+other routines in NIH fidap.
+
+The 3D-registration modules make calls to C code written by
+Roger Woods, M.D., Dept. Neurology, UCLA School of Medicine.
+The specific programs are alignpettopet16bit, reorient16bit,
+reslice16bit, and softmean16bit, which are 16-bit versions of
+Dr. Woods' AIR programs alignpettopet, reorient, reslice, and
+softmean (AIR version 1.X).  Source code for this software is
+NOT included with NIH fidap.  For further information, and to
+obtain the AIR programs, contact Dr. Woods at:
+
+           Department of Neurology
+           Reed Neurological Research Center
+           UCLA School of Medicine
+           710 Westwood Plaza
+           Los Angeles, California  90024-1769
+
+
+Note that you will need to modify these three AIR programs to run on
+16-bit data; that they should then be renamed alignpettopet16bit,
+reorient16bit, reslice16bit, and softmean16bit; and that they should
+then be placed in some directory in your UNIX searchpath, in order for
+fidap to be able to call them.  See: http://bishopw.loni.ucla.edu/AIR
+
+We extend thanks to our research assistants Trina Keil, Elizabeth Hoffman,
+and Jennifer Schouten for subject recruitment and scheduling, arranging
+of experimental stimuli, and assistance in the collection and analysis
+of fMRI data; and to Drs. Vincent Clark, Francois Lalonde, and Susan
+Courtney for ideas on analysis.  Also, many thanks to Dr. John D. Van
+Horn, of the Clinical Brain Disorders Branch, National Institute of
+Mental Health, for many fruitful and enjoyable discussions about
+statistics, signal processing, and science in general.
+
+As more C programs and shell scripts are written they shall be
+installed into fidap.  If they are written by other authors,
+due credit will of course be given.
+
+fidap is to be used for research purposes only.  While we have
+of course run the code on our own data sets and detected and
+eliminated many bugs, we cannot guarantee that it has absolutely
+no bugs and can accept no responsibility for damages resulting
+from the use of fidap.  Make backup copies of all of your data,
+and use fidap at your own risk.
+
+If you have questions regarding fidap, please send email
+to joem@alw.nih.gov
+
+
+
+--------------------------------------------------------------------
+REFERENCES.
+-----------
+
+Arick MR, UNIX  C Shell Desk Reference, Wellesley, MA: QED Technical Publishing Group (1992).
+
+
+Bandettini PA, Jesmanowicz A, Wong EC, Hyde JS, Magn Reson Med 30: 161-173.
+
+
+Federighi, E.T., Extended tables of the percentage points of Student's t-distribution,  J. Am. Stat. Assoc., 54:683-688 (1959).
+
+
+Forman SD, Cohen JD, Fitzgerald M, Eddy WF, Mintun MA, Noll DC, Improved Assessment of Significant Acitvations in Functional Magnetic Resonance Imaging (fMRI): Use of a Cluster-Size Threshold, Magn Reson Med 33:636-647 (1995).
+
+
+Friston  KJ, Jezzard P, Turner R, Analysis of Functional MRI Time-Series, Human Brain Mapping 1:153-171 (1994).
+
+
+Friston KJ, Worsley KJ, Frackowiak RSJ, Mazziotta JC, Evans AC, Assessing the Significance of Focal Activations Using Their Spatial Extent, Human Brain Mapping 1:210-220 (1994).
+
+
+Friston KJ, Holmes AP, Worsley KJ, Poline JB, Frith CD, Frackowiak RSJ, Statistical Parametric Maps in Functional Neuroimaging: A General Linear Approach, Human Brain Mapping 2:189-210 (1995).
+
+
+Kernighan BW, Ritchie DM, The C Programming Language, 2nd edition, Englewood Cliffs, NJ: Prentice Hall (1988).
+
+
+Paulson E, An approximate normalization of the Analysis of Variance distribution, Ann Math Statist 13:233-235 (1942).
+
+
+Press WH, Teukolsky SA, Vetterling WT, Flannery BP, Numerical Recipes in C, 2nd edition, Cambridge:Cambridge University Press (1992).
+
+
+Rencher AC, Methods of Multivariate Analysis, New York: John Wiley & Sons (1995), pp. 366-380.
+
+
+Woods RP, Cherry SR, Mazziotta JC, Rapid Automated Algorithm for Aligning and Reslicing PET Images, Journal of Computer Assisted Tomography 16 (4):620-33 (1992).
+
+
+Worsley KJ, Friston KJ, Analysis of fMRI time-series revisited - again, NeuroImage, 2:173-181 (1995).
+
+
+--------------------------------------------------------------------
+Jose' Ma. Maisog, MD          NIH/NIMH/LPP/SFBI
+Building 10, Room 4C110       phone: 301-402-0416
+10 Center Drive, MSC 1366     email: joem@alw.nih.gov
+Bethesda, Maryland  20892     FAX: 301-402-0921
+

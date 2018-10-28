@@ -1,0 +1,6 @@
+extract_time_series: extract_time_series.o imgio.o
+	$(CC) $(EXTRAS) extract_time_series.o imgio.o -o extract_time_series
+extract_time_series.o: extract_time_series.c
+	$(CC) $(EXTRAS) -c extract_time_series.c
+imgio.o: imgio.c
+	$(CC) $(EXTRAS) -c imgio.c
